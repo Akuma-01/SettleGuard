@@ -1,0 +1,21 @@
+{
+  "name": "settleguard",
+  "version": "0.1.0",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "SettleGuard — AI finance controller that reconciles payments, refunds, settlements, and bank credits, investigates mismatches with a bounded agent, and reports measured accuracy.",
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
+  }
+}
