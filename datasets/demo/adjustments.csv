@@ -1,0 +1,4 @@
+adjustment_id,settlement_id,amount,type,description,source_reference
+ADJ_20260313_1,SET_20260313,-4910.60,manual_adjustment,manual adjustment,
+ADJ_20260328_2,SET_20260328,-5444.46,manual_adjustment,manual adjustment,
+ADJ_20260307_3,SET_20260307,-5647.62,manual_adjustment,manual adjustment,

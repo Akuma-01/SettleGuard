@@ -1,0 +1,311 @@
+{
+  "dataset": "demo",
+  "seed": 42,
+  "generatedAt": "2026-08-22T14:06:05.752Z",
+  "config": {
+    "name": "demo",
+    "seed": 42,
+    "paymentCount": 500,
+    "refundRate": 0.12,
+    "daySpan": 30,
+    "baseDate": "2026-03-01",
+    "exceptions": {
+      "missingSettlement": 3,
+      "duplicateRefund": 3,
+      "feeMismatch": 4,
+      "bankAmountMismatch": 4,
+      "unknownAdjustment": 3,
+      "ambiguousReference": 2
+    },
+    "outDir": "datasets/demo"
+  },
+  "counts": {
+    "payments": 500,
+    "refunds": 65,
+    "settlements": 30,
+    "bankTransactions": 30,
+    "adjustments": 3,
+    "injectedExceptions": 19
+  },
+  "injectedExceptions": [
+    {
+      "type": "MISSING_SETTLEMENT",
+      "recordIds": [
+        "PAY_10443",
+        "SET_20260330"
+      ],
+      "amountAtRiskPaise": 594267,
+      "detail": {
+        "paymentId": "PAY_10443",
+        "expectedSettlementId": "SET_20260330",
+        "amountPaise": 594267
+      },
+      "note": "Payment PAY_10443 (₹5,942.67) was captured but never included in settlement SET_20260330 — it has no settlement to reconcile against."
+    },
+    {
+      "type": "MISSING_SETTLEMENT",
+      "recordIds": [
+        "PAY_10037",
+        "SET_20260327"
+      ],
+      "amountAtRiskPaise": 593525,
+      "detail": {
+        "paymentId": "PAY_10037",
+        "expectedSettlementId": "SET_20260327",
+        "amountPaise": 593525
+      },
+      "note": "Payment PAY_10037 (₹5,935.25) was captured but never included in settlement SET_20260327 — it has no settlement to reconcile against."
+    },
+    {
+      "type": "MISSING_SETTLEMENT",
+      "recordIds": [
+        "PAY_10240",
+        "SET_20260312"
+      ],
+      "amountAtRiskPaise": 478501,
+      "detail": {
+        "paymentId": "PAY_10240",
+        "expectedSettlementId": "SET_20260312",
+        "amountPaise": 478501
+      },
+      "note": "Payment PAY_10240 (₹4,785.01) was captured but never included in settlement SET_20260312 — it has no settlement to reconcile against."
+    },
+    {
+      "type": "FEE_MISMATCH",
+      "recordIds": [
+        "SET_20260324"
+      ],
+      "amountAtRiskPaise": 115701,
+      "detail": {
+        "settlementId": "SET_20260324",
+        "correctFeePaise": 69476,
+        "reportedFeePaise": 185177,
+        "deltaPaise": 115701
+      },
+      "note": "Settlement SET_20260324 reports a fee of ₹1,851.77; 2% of gross calculates to ₹694.76."
+    },
+    {
+      "type": "FEE_MISMATCH",
+      "recordIds": [
+        "SET_20260319"
+      ],
+      "amountAtRiskPaise": 73832,
+      "detail": {
+        "settlementId": "SET_20260319",
+        "correctFeePaise": 201259,
+        "reportedFeePaise": 127427,
+        "deltaPaise": -73832
+      },
+      "note": "Settlement SET_20260319 reports a fee of ₹1,274.27; 2% of gross calculates to ₹2,012.59."
+    },
+    {
+      "type": "FEE_MISMATCH",
+      "recordIds": [
+        "SET_20260323"
+      ],
+      "amountAtRiskPaise": 40738,
+      "detail": {
+        "settlementId": "SET_20260323",
+        "correctFeePaise": 155043,
+        "reportedFeePaise": 114305,
+        "deltaPaise": -40738
+      },
+      "note": "Settlement SET_20260323 reports a fee of ₹1,143.05; 2% of gross calculates to ₹1,550.43."
+    },
+    {
+      "type": "FEE_MISMATCH",
+      "recordIds": [
+        "SET_20260320"
+      ],
+      "amountAtRiskPaise": 35235,
+      "detail": {
+        "settlementId": "SET_20260320",
+        "correctFeePaise": 152725,
+        "reportedFeePaise": 187960,
+        "deltaPaise": 35235
+      },
+      "note": "Settlement SET_20260320 reports a fee of ₹1,879.60; 2% of gross calculates to ₹1,527.25."
+    },
+    {
+      "type": "UNKNOWN_ADJUSTMENT",
+      "recordIds": [
+        "SET_20260313",
+        "ADJ_20260313_1"
+      ],
+      "amountAtRiskPaise": 491060,
+      "detail": {
+        "settlementId": "SET_20260313",
+        "adjustmentId": "ADJ_20260313_1",
+        "amountPaise": -491060
+      },
+      "note": "Adjustment ADJ_20260313_1 (-₹4,910.60) on settlement SET_20260313 has no source_reference."
+    },
+    {
+      "type": "UNKNOWN_ADJUSTMENT",
+      "recordIds": [
+        "SET_20260328",
+        "ADJ_20260328_2"
+      ],
+      "amountAtRiskPaise": 544446,
+      "detail": {
+        "settlementId": "SET_20260328",
+        "adjustmentId": "ADJ_20260328_2",
+        "amountPaise": -544446
+      },
+      "note": "Adjustment ADJ_20260328_2 (-₹5,444.46) on settlement SET_20260328 has no source_reference."
+    },
+    {
+      "type": "UNKNOWN_ADJUSTMENT",
+      "recordIds": [
+        "SET_20260307",
+        "ADJ_20260307_3"
+      ],
+      "amountAtRiskPaise": 564762,
+      "detail": {
+        "settlementId": "SET_20260307",
+        "adjustmentId": "ADJ_20260307_3",
+        "amountPaise": -564762
+      },
+      "note": "Adjustment ADJ_20260307_3 (-₹5,647.62) on settlement SET_20260307 has no source_reference."
+    },
+    {
+      "type": "DUPLICATE_REFUND",
+      "recordIds": [
+        "REF_50006",
+        "REF_90063"
+      ],
+      "amountAtRiskPaise": 676491,
+      "detail": {
+        "originalRefundId": "REF_50006",
+        "duplicateRefundId": "REF_90063",
+        "paymentId": "PAY_10045",
+        "amountPaise": 676491
+      },
+      "note": "Refunds REF_50006 and REF_90063 share the same payment, amount, and timestamp — likely one refund recorded twice."
+    },
+    {
+      "type": "DUPLICATE_REFUND",
+      "recordIds": [
+        "REF_50020",
+        "REF_90064"
+      ],
+      "amountAtRiskPaise": 369661,
+      "detail": {
+        "originalRefundId": "REF_50020",
+        "duplicateRefundId": "REF_90064",
+        "paymentId": "PAY_10130",
+        "amountPaise": 369661
+      },
+      "note": "Refunds REF_50020 and REF_90064 share the same payment, amount, and timestamp — likely one refund recorded twice."
+    },
+    {
+      "type": "DUPLICATE_REFUND",
+      "recordIds": [
+        "REF_50060",
+        "REF_90065"
+      ],
+      "amountAtRiskPaise": 355022,
+      "detail": {
+        "originalRefundId": "REF_50060",
+        "duplicateRefundId": "REF_90065",
+        "paymentId": "PAY_10485",
+        "amountPaise": 355022
+      },
+      "note": "Refunds REF_50060 and REF_90065 share the same payment, amount, and timestamp — likely one refund recorded twice."
+    },
+    {
+      "type": "BANK_CREDIT_MISMATCH",
+      "recordIds": [
+        "SET_20260315",
+        "BANK_20260315"
+      ],
+      "amountAtRiskPaise": 121452,
+      "detail": {
+        "settlementId": "SET_20260315",
+        "bankTransactionId": "BANK_20260315",
+        "expectedPaise": 6025570,
+        "actualPaise": 5904118,
+        "deltaPaise": -121452
+      },
+      "note": "Bank credit BANK_20260315 posted ₹59,041.18; settlement SET_20260315 expected ₹60,255.70."
+    },
+    {
+      "type": "BANK_CREDIT_MISMATCH",
+      "recordIds": [
+        "SET_20260304",
+        "BANK_20260304"
+      ],
+      "amountAtRiskPaise": 100148,
+      "detail": {
+        "settlementId": "SET_20260304",
+        "bankTransactionId": "BANK_20260304",
+        "expectedPaise": 4988387,
+        "actualPaise": 5088535,
+        "deltaPaise": 100148
+      },
+      "note": "Bank credit BANK_20260304 posted ₹50,885.35; settlement SET_20260304 expected ₹49,883.87."
+    },
+    {
+      "type": "BANK_CREDIT_MISMATCH",
+      "recordIds": [
+        "SET_20260316",
+        "BANK_20260316"
+      ],
+      "amountAtRiskPaise": 47682,
+      "detail": {
+        "settlementId": "SET_20260316",
+        "bankTransactionId": "BANK_20260316",
+        "expectedPaise": 6414826,
+        "actualPaise": 6462508,
+        "deltaPaise": 47682
+      },
+      "note": "Bank credit BANK_20260316 posted ₹64,625.08; settlement SET_20260316 expected ₹64,148.26."
+    },
+    {
+      "type": "BANK_CREDIT_MISMATCH",
+      "recordIds": [
+        "SET_20260313",
+        "BANK_20260313"
+      ],
+      "amountAtRiskPaise": 135103,
+      "detail": {
+        "settlementId": "SET_20260313",
+        "bankTransactionId": "BANK_20260313",
+        "expectedPaise": 9344720,
+        "actualPaise": 9209617,
+        "deltaPaise": -135103
+      },
+      "note": "Bank credit BANK_20260313 posted ₹92,096.17; settlement SET_20260313 expected ₹93,447.20."
+    },
+    {
+      "type": "AMBIGUOUS_MATCH",
+      "recordIds": [
+        "SET_20260305",
+        "BANK_20260305"
+      ],
+      "amountAtRiskPaise": 4725919,
+      "detail": {
+        "settlementId": "SET_20260305",
+        "bankTransactionId": "BANK_20260305",
+        "originalReference": "UTR20260305013",
+        "corruptedReference": "NEFT-BATCH-552424"
+      },
+      "note": "Bank credit BANK_20260305's reference no longer matches settlement SET_20260305's bankReference (UTR20260305013 → NEFT-BATCH-552424); must be resolved via amount + date, not an exact reference match."
+    },
+    {
+      "type": "AMBIGUOUS_MATCH",
+      "recordIds": [
+        "SET_20260322",
+        "BANK_20260322"
+      ],
+      "amountAtRiskPaise": 8528285,
+      "detail": {
+        "settlementId": "SET_20260322",
+        "bankTransactionId": "BANK_20260322",
+        "originalReference": "UTR20260322017",
+        "corruptedReference": "NEFT-BATCH-502108"
+      },
+      "note": "Bank credit BANK_20260322's reference no longer matches settlement SET_20260322's bankReference (UTR20260322017 → NEFT-BATCH-502108); must be resolved via amount + date, not an exact reference match."
+    }
+  ]
+}
