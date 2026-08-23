@@ -1,22 +1,16 @@
-/**
- * SettleGuard — Phase 2, Step 2: PostgreSQL schema.
- *
- * Matches architecture doc §1.6 table-for-table, column-for-column,
- * with exactly one deliberate addition, called out below. All money
- * is bigint paise — never float, never a plain `integer` (a busy
- * merchant's daily gross can exceed int4 range; bigint removes the
- * question entirely).
- *
- * Only §1.6's full 15-table shape is defined here today (cheap DDL,
- * and the doc's own build order puts "PostgreSQL schema" at step 2,
- * before ingestion at step 3) — but only the first 8 tables get rows
- * written by Day 3's ingestion pipeline. reconciliation_runs through
- * audit_logs stay empty until Day 4's matching engine and later
- * phases write to them.
- */
 
-import { pgTable, serial, text, bigint, integer, real, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
-
+import {
+  bigint,
+  boolean,
+  integer,
+  jsonb,
+  pgTable,
+  real,
+  serial,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 // ---------------- Raw data (populated by Day 3's ingestion) ----------------
 
 export const merchants = pgTable("merchants", {
@@ -25,15 +19,26 @@ export const merchants = pgTable("merchants", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const batches = pgTable("batches", {
-  id: serial("id").primaryKey(),
-  merchantId: integer("merchant_id").references(() => merchants.id),
-  name: text("name").notNull(),
-  status: text("status").notNull().default("pending"), // pending | processing | completed | failed
-  startedAt: timestamp("started_at", { withTimezone: true }),
-  completedAt: timestamp("completed_at", { withTimezone: true }),
-  recordCount: integer("record_count").notNull().default(0),
-});
+export const batches = pgTable(
+  "batches",
+  {
+    id: serial("id").primaryKey(),
+    merchantId: integer("merchant_id")
+      .notNull()
+      .references(() => merchants.id),
+    name: text("name").notNull(),
+    status: text("status").notNull().default("pending"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    recordCount: integer("record_count").notNull().default(0),
+  },
+  (table) => ({
+    merchantNameUnique: uniqueIndex("batches_merchant_name_unique").on(
+      table.merchantId,
+      table.name,
+    ),
+  }),
+);
 
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
