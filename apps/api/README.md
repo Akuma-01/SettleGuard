@@ -26,11 +26,12 @@ Then:
 cp .env.example .env       # defaults already match Option A/B above
 npm install
 npm run db:push            # creates all 15 tables from src/db/schema.ts
-npm test                   # 18 tests: normalization + validation
+npm test                   # 34 tests: normalization, validation, matching, exceptions
 npm run ingest -- ../../datasets/demo demo-001
+npm run reconcile -- 1     # use whatever batch id the ingest above printed
 ```
 
-Expect:
+Expect ingestion:
 ```text
 Batch N ("demo-001")
   payments            500 inserted
@@ -39,6 +40,28 @@ Batch N ("demo-001")
   bankTransactions     30 inserted
   adjustments           3 inserted
 ```
+
+Then reconciliation:
+```text
+Reconciliation run N — batch N
+Total records:   628
+Matched:         609
+Unmatched:       19
+Match rate:      96.97%
+Exceptions:      19
+
+  UNKNOWN_ADJUSTMENT     3
+  MISSING_SETTLEMENT     3
+  FEE_MISMATCH           4
+  BANK_CREDIT_MISMATCH   4
+  AMBIGUOUS_MATCH        2
+  DUPLICATE_REFUND       3
+```
+
+That's exactly the 19 exceptions `datasets/demo/ground_truth.json` says
+were injected — same breakdown, every one field-verified, not just
+counted. Try the same against `../../datasets/benchmark` after
+`npm run generate:benchmark` for the 5,000-payment / 125-exception case.
 
 `npm run db:studio` opens Drizzle Studio (a local DB browser) if you
 want to look at what landed without writing SQL by hand.
@@ -55,11 +78,19 @@ src/
 │   ├── normalize.ts          rupee-string -> paise, empty -> null, etc.
 │   ├── parse-csv.ts           papaparse + Zod, row-level error collection
 │   └── ingest-batch.ts         orchestrates a full dataset folder -> DB
+├── reconciliation/
+│   ├── money.ts                fee/tax/date helpers
+│   ├── settlement-reconciler.ts  date-inferred payment matching, MISSING_SETTLEMENT,
+│   │                              FEE_MISMATCH, UNKNOWN_ADJUSTMENT, expected_net_paise
+│   ├── bank-reconciler.ts          Stage A/B bank matching, BANK_CREDIT_MISMATCH, AMBIGUOUS_MATCH
+│   ├── duplicate-refunds.ts          global DUPLICATE_REFUND scan
+│   └── run.ts                          orchestrator: loads a batch, writes matches/exceptions
 └── cli/
-    └── ingest.ts        entrypoint: npm run ingest -- <dir> [batch-name]
+    ├── ingest.ts        npm run ingest -- <dir> [batch-name]
+    └── reconcile.ts       npm run reconcile -- <batchId>
 ```
 
-`routes/`, `controllers/`, `agent/`, `reconciliation/`, `policies/`,
-`workers/` from the repository layout aren't created yet — they show
-up as Phase 2's matching stages (Day 4), Phase 4's agent, Phase 5's
-policy engine, and Phase 8's queues actually need them.
+`routes/`, `controllers/`, `agent/`, `policies/`, `workers/` from the
+repository layout aren't created yet — they show up as Phase 4's agent,
+Phase 5's policy engine, Phase 6's API layer, and Phase 8's queues
+actually need them.

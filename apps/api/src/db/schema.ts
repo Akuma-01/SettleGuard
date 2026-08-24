@@ -216,3 +216,13 @@ export const auditLogs = pgTable("audit_logs", {
   metadataJson: jsonb("metadata_json"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+
+export type PaymentRecord = typeof payments.$inferSelect;
+export type RefundRecord = typeof refunds.$inferSelect;
+export type SettlementRecord = typeof settlements.$inferSelect;
+export type BankTransactionRecord = typeof bankTransactions.$inferSelect;
+export type AdjustmentRecord = typeof adjustments.$inferSelect;
+export type SettlementItemRecord = typeof settlementItems.$inferSelect;
+export type ExceptionRecord = typeof exceptions.$inferSelect;
+export type MatchRecord = typeof matches.$inferSelect;

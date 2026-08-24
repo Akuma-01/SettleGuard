@@ -6,6 +6,7 @@
   "scripts": {
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "reconcile": "tsx src/cli/reconcile.ts",
     "ingest": "tsx src/cli/ingest.ts",
     "test": "vitest run"
   },
