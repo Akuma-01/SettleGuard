@@ -1,0 +1,2 @@
+settlement_id,day,gross_amount,fee_amount,tax_amount,adjustment_amount,net_amount,settled_at,bank_reference
+SET_20260301,2026-03-01,113360.42,2267.21,408.10,-2861.87,91269.24,2026-03-02T18:00:00Z,UTR20260301020

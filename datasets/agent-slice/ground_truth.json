@@ -1,0 +1,46 @@
+{
+  "dataset": "agent-slice",
+  "seed": 11,
+  "generatedAt": "2026-08-26T03:28:49.820Z",
+  "config": {
+    "name": "agent-slice",
+    "seed": 11,
+    "paymentCount": 20,
+    "refundRate": 0.15,
+    "daySpan": 1,
+    "baseDate": "2026-03-01",
+    "exceptions": {
+      "missingSettlement": 0,
+      "duplicateRefund": 0,
+      "feeMismatch": 0,
+      "bankAmountMismatch": 0,
+      "unknownAdjustment": 1,
+      "ambiguousReference": 0
+    },
+    "outDir": "datasets/agent-slice"
+  },
+  "counts": {
+    "payments": 20,
+    "refunds": 3,
+    "settlements": 1,
+    "bankTransactions": 1,
+    "adjustments": 1,
+    "injectedExceptions": 1
+  },
+  "injectedExceptions": [
+    {
+      "type": "UNKNOWN_ADJUSTMENT",
+      "recordIds": [
+        "SET_20260301",
+        "ADJ_20260301_1"
+      ],
+      "amountAtRiskPaise": 286187,
+      "detail": {
+        "settlementId": "SET_20260301",
+        "adjustmentId": "ADJ_20260301_1",
+        "amountPaise": -286187
+      },
+      "note": "Adjustment ADJ_20260301_1 (-₹2,861.87) on settlement SET_20260301 has no source_reference."
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+refund_id,payment_id,amount,status,created_at
+REF_50001,PAY_10005,3104.55,processed,2026-03-01T08:35:00Z
+REF_50002,PAY_10008,5324.71,processed,2026-03-01T17:20:00Z
+REF_50003,PAY_10016,8124.74,processed,2026-03-01T12:56:00Z

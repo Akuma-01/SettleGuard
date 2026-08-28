@@ -18,12 +18,12 @@
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import type { DatasetConfig, GeneratedDataset } from "./generator/types.js";
-import { mulberry32, inr } from "./generator/utils.js";
-import { generatePayments, generateRefunds } from "./generator/payments.js";
-import { groupIntoSettlements, generateBankTransactions } from "./generator/settlements.js";
-import { injectAllExceptions, injectBankStageExceptions } from "./generator/exceptions.js";
 import { writeCsv } from "./generator/csv.js";
+import { injectAllExceptions, injectBankStageExceptions } from "./generator/exceptions.js";
+import { generatePayments, generateRefunds } from "./generator/payments.js";
+import { generateBankTransactions, groupIntoSettlements } from "./generator/settlements.js";
+import type { DatasetConfig, GeneratedDataset } from "./generator/types.js";
+import { inr, mulberry32 } from "./generator/utils.js";
 
 const PRESETS: Record<string, DatasetConfig> = {
   tiny: {
@@ -56,6 +56,23 @@ const PRESETS: Record<string, DatasetConfig> = {
     // Exact distribution from the architecture doc's own sample config.
     exceptions: { missingSettlement: 20, duplicateRefund: 20, feeMismatch: 25, bankAmountMismatch: 25, unknownAdjustment: 20, ambiguousReference: 15 },
     outDir: "datasets/benchmark",
+  },
+  "agent-slice": {
+    // Phase 4, Step 1's own spec: "one small dataset (20 payments / 3
+    // refunds / 1 settlement / 1 bank credit / 1 unknown adjustment)".
+    // daySpan: 1 forces every payment into a single day-bucket, so
+    // exactly one settlement (and one derived bank credit) comes out
+    // regardless of scale — deliberately the smallest, most legible
+    // case to wire the agent loop against end to end, not a
+    // realistic-volume dataset.
+    name: "agent-slice",
+    seed: 11,
+    paymentCount: 20,
+    refundRate: 0.15,
+    daySpan: 1,
+    baseDate: "2026-03-01",
+    exceptions: { missingSettlement: 0, duplicateRefund: 0, feeMismatch: 0, bankAmountMismatch: 0, unknownAdjustment: 1, ambiguousReference: 0 },
+    outDir: "datasets/agent-slice",
   },
 };
 

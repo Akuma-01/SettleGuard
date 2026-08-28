@@ -1,0 +1,2 @@
+bank_transaction_id,amount,direction,posted_at,reference,description
+BANK_20260301,91269.24,credit,2026-03-03T09:00:00Z,UTR20260301020,NEFT settlement credit
