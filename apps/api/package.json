@@ -8,10 +8,12 @@
     "db:studio": "drizzle-kit studio",
     "reconcile": "tsx src/cli/reconcile.ts",
     "benchmark": "tsx src/cli/benchmark.ts",
+    "investigate": "tsx src/cli/investigate.ts",
     "ingest": "tsx src/cli/ingest.ts",
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
     "dotenv": "^16.6.1",
     "drizzle-orm": "^0.36.4",
     "papaparse": "^5.4.1",
