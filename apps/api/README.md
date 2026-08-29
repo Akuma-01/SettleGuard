@@ -66,6 +66,69 @@ counted. Try the same against `../../datasets/benchmark` after
 `npm run db:studio` opens Drizzle Studio (a local DB browser) if you
 want to look at what landed without writing SQL by hand.
 
+## Benchmark — one command, unattended
+
+`npm run ingest` + `npm run reconcile` above are two manual steps.
+`npm run benchmark` does both plus scoring, in one shot, against a
+fresh batch every time:
+
+```bash
+npm run benchmark                    # defaults to datasets/benchmark (5,000 payments)
+npm run benchmark -- --dataset demo  # quicker sanity check, 500 payments
+```
+
+```text
+Match rate: 98.05%
+Precision:  100.00%  (125/125 flagged exceptions were real)
+Recall:     100.00%  (125/125 injected exceptions were caught)
+Throughput: 3314 records/sec (reconciliation only, 1767ms for 5855 records)
+```
+
+Run this after every later phase (the agent, the policy engine, the
+API layer) — it's the fastest way to confirm new work hasn't quietly
+regressed the deterministic core underneath it. Exits non-zero on
+anything less than 100%/100%, so it's CI-friendly too.
+
+## The agent (Phase 4, Step 1 — vertical slice)
+
+```bash
+npm run investigate -- <exceptionId>
+```
+
+Requires `ANTHROPIC_API_KEY` in `.env` — everything else in this repo
+is pure deterministic code with zero AI, but this one command makes a
+real Claude call. Without a key it fails immediately and clearly
+rather than hanging on a doomed network request.
+
+To try it against the tiny purpose-built slice dataset (20 payments,
+3 refunds, 1 settlement, 1 unknown adjustment — nothing else):
+
+```bash
+cd ../..                                              # project root
+npm run generate:agent-slice
+cd apps/api
+npm run ingest -- ../../datasets/agent-slice agent-slice-001
+npm run reconcile -- <batchId>        # printed above
+npm run investigate -- <exceptionId>   # printed above
+open investigation-<exceptionId>.html  # the "plain page" evidence display
+```
+
+The agent has 5 read-only tools (`get_exception`, `get_settlement`,
+`get_adjustment`, `get_related_payments`, `get_related_refunds`) — no
+tool writes anything or moves money. It always ends by producing
+Zod-validated structured JSON (`rootCause`, `confidence`, `evidence`,
+`recommendedAction`, `requiresHumanApproval`, `explanation`); an
+invalid response gets one repair retry, then an honest `AI_ERROR`
+rather than a fabricated result. A minimal policy stub opens a review
+case when the agent flags `requiresHumanApproval` — not Phase 5's real
+policy engine yet, just enough to complete the loop end to end.
+
+Everything except the live model call is tested without needing an
+API key: the 5 tools against real Postgres, the Zod schema, and the
+entire tool-calling + repair-retry loop via scripted fake models
+(`npm test` covers all of it, plus a full integration test that runs
+`investigateException` end to end with a scripted response).
+
 ## What's here
 
 ```text
@@ -85,12 +148,27 @@ src/
 │   ├── bank-reconciler.ts          Stage A/B bank matching, BANK_CREDIT_MISMATCH, AMBIGUOUS_MATCH
 │   ├── duplicate-refunds.ts          global DUPLICATE_REFUND scan
 │   └── run.ts                          orchestrator: loads a batch, writes matches/exceptions
+├── benchmark/
+│   ├── id-resolver.ts        external ID (ground_truth.json) -> internal DB id
+│   ├── score.ts                 precision/recall against ground truth, per-type breakdown
+│   └── run-benchmark.ts            fresh ingest -> timed reconcile -> score, one shot
+├── agent/
+│   ├── schema.ts              InvestigationResult Zod schema
+│   ├── tools.ts                 5 read-only evidence tools + dispatcher
+│   ├── system-prompt.ts           golden rule, structured output requirement
+│   ├── loop.ts                      tool-calling loop + repair-retry (no SDK import — testable without a key)
+│   ├── client.ts                      real Anthropic SDK wrapper (only file that imports it)
+│   ├── investigate.ts                   orchestrator: load -> agent -> policy stub -> evidence page
+│   └── evidence-html.ts                   the "plain page" static HTML generator
 └── cli/
     ├── ingest.ts        npm run ingest -- <dir> [batch-name]
-    └── reconcile.ts       npm run reconcile -- <batchId>
+    ├── reconcile.ts       npm run reconcile -- <batchId>
+    ├── benchmark.ts         npm run benchmark [-- --dataset demo|benchmark]
+    └── investigate.ts         npm run investigate -- <exceptionId>
 ```
 
-`routes/`, `controllers/`, `agent/`, `policies/`, `workers/` from the
-repository layout aren't created yet — they show up as Phase 4's agent,
-Phase 5's policy engine, Phase 6's API layer, and Phase 8's queues
-actually need them.
+`routes/`, `controllers/`, `policies/`, `workers/` from the repository
+layout aren't created yet — they show up as Phase 6's API layer,
+Phase 5's real policy engine, and Phase 8's queues actually need them.
+`agent/` today is a deliberately thin vertical slice (5 tools, not the
+full ~20-tool catalog) — Phase 4, Steps 2-5 build that out.

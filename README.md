@@ -6,42 +6,72 @@ and reports measured match/exception accuracy with an honest unresolved list.
 
 Built for the Razorpay AI Buildathon, Track 04 — AI Finance Controller.
 
-**Status: Day 1 — Phase 0 done, Phase 1 · Step 1 done.** See
-`Day1_Plan.md` (shared alongside this repo) for the full write-up, and
-`docs/PHASE_0_SCOPE.md` for the frozen scope.
+**Status: Day 6 — Phases 0-3 done; Phase 4 Step 1 (agent vertical
+slice) done.** The full loop — load exception → agent investigates →
+policy decides → evidence page displays it — is wired end to end on a
+tiny dataset. Every piece except the live model call is tested against
+real Postgres or scripted fake models (no Anthropic API key available
+in the build sandbox); the CLI itself fails clearly and safely without
+one, ready for your own key. See `docs/PHASE_0_SCOPE.md` for the frozen
+scope and `docs/COMMIT_GUIDE.md` for the commit log.
 
-## Run today's proof
+## Run it
 
 ```bash
 npm install
-npm run proof
+npm run proof && npm run generate:demo && npm run generate:benchmark && npm run generate:agent-slice
+
+cd apps/api && npm install
+cp .env.example .env       # see apps/api/README.md for Postgres + Anthropic setup
+npm run db:push
+npm test                    # 76 tests
+npm run benchmark           # 100% precision/recall, unattended
+
+npm run ingest -- ../../datasets/agent-slice agent-slice-001
+npm run reconcile -- <batchId>       # printed by ingest above
+npm run investigate -- <exceptionId>  # printed by reconcile above — needs ANTHROPIC_API_KEY
 ```
 
-This runs a self-contained script — no database, no framework, no LLM —
-that generates a small seeded dataset, calculates an expected settlement
-with plain arithmetic, injects three known errors, and detects all three
-deterministically. It's the foundation everything else builds on.
+## What's built
+
+- **Phase 1** (`scripts/`) — synthetic data generator, 4 scale tiers
+  now including a tiny agent-slice preset (Day 1-2, 6).
+- **Phase 2** (`apps/api/src/db/`, `.../ingestion/`, `.../reconciliation/`)
+  — PostgreSQL schema, CSV ingestion, the full deterministic matching
+  and exception-detection engine (Days 3-4). Zero AI.
+- **Phase 3** (`apps/api/src/benchmark/`) — `npm run benchmark`: one
+  unattended command, 100% precision/recall at both demo and benchmark
+  scale (Day 5).
+- **Phase 4, Step 1** (`apps/api/src/agent/`) — the agent vertical
+  slice (Day 6): 5 read-only evidence tools, a tool-calling loop with
+  a step cap, Zod-validated structured output with one repair retry
+  before an honest `AI_ERROR`, a minimal policy stub, and a plain
+  static HTML evidence page. Not the full ~20-tool catalog yet — that's
+  Day 7-8's job, now that the wiring is proven.
 
 ## What's next
 
-Phase 1 · Step 2 (Day 2): the real synthetic data generator — payments,
-refunds, settlements, bank ledger, an exception injector, and a
-`ground_truth.json` to benchmark against. Full 14-day pace is in the
+Phase 4, Steps 2-5: the full tool layer (analysis + controlled-action
+tools), a more capable loop, and a refined system prompt informed by
+what Day 6's slice actually needed. `npm run benchmark` still needs
+to pass 100%/100% after — the agent is additive, never a replacement
+for the deterministic core underneath it. Full 14-day pace is in the
 architecture doc.
 
 ## Structure so far
 
 ```
 settleguard/
+├── apps/api/
+│   ├── src/{db,ingestion,reconciliation,benchmark,agent,cli}/
+│   └── tests/
 ├── scripts/
-│   └── phase1-step1-proof.ts   # today's proof script
-├── docs/
-│   └── PHASE_0_SCOPE.md        # frozen scope (Phase 0 deliverable)
-├── package.json
-├── tsconfig.json
-└── .env.example                 # not used yet — Phase 2+
+│   ├── phase1-step1-proof.ts
+│   ├── generate-dataset.ts
+│   └── generator/
+├── datasets/{demo,benchmark,agent-slice}/
+├── docs/{PHASE_0_SCOPE.md,COMMIT_GUIDE.md}
 ```
 
-`apps/api`, `apps/web`, `packages/`, and `datasets/` get created when
-their phases start (Postgres in Phase 2, the agent in Phase 4, the
+`apps/web` and `packages/` get created when their phases start (the
 frontend in Phase 7) — not before, on purpose.
