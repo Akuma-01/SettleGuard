@@ -23,7 +23,7 @@ npm run proof && npm run generate:demo && npm run generate:benchmark && npm run 
 cd apps/api && npm install
 cp .env.example .env       # see apps/api/README.md for Postgres + Anthropic setup
 npm run db:push
-npm test                    # 92 tests
+npm test                    # 97 tests
 npm run benchmark           # 100% precision/recall, unattended
 
 npm run ingest -- ../../datasets/agent-slice agent-slice-001
@@ -45,8 +45,8 @@ npm run investigate -- <exceptionId>  # printed by reconcile above — needs ANT
   Day 7's tool layer so far: 10 input-validated evidence tools and 4
   deterministic analysis tools, plus 2 authorization-gated workflow
   actions for review cases and adjustment proposals,
-  a tool-calling loop with
-  a step cap, Zod-validated structured output with one repair retry
+  a tool-calling loop with an exact 8-call budget and isolated provider/tool
+  failures, Zod-validated structured output with one repair retry
   before an honest `AI_ERROR`, a minimal policy stub, and a plain
   static HTML evidence page. Direct linking, reclassification, and
   resolution remain gated on Phase 5's real policy engine.

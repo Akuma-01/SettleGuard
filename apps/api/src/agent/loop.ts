@@ -46,13 +46,26 @@ export type AgentStep =
   | { type: "tool_result"; toolName: string; toolOutput: unknown }
   | { type: "final_text"; text: string };
 
-const MAX_TOOL_STEPS = 8;
+export const MAX_TOOL_CALLS = 8;
 
 export interface LoopResult {
   steps: AgentStep[];
   finalText: string | null;
   hitStepCap: boolean;
+  error: string | null;
   messages: ModelMessage[]; // full history — needed so a repair retry can continue the same conversation
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function serializeToolOutput(output: unknown): string {
+  try {
+    return JSON.stringify(output);
+  } catch (error) {
+    return JSON.stringify({ error: `Tool output could not be serialized: ${errorMessage(error)}` });
+  }
 }
 
 /** The raw tool-calling loop: calls the model, executes any tool_use blocks, feeds results back, repeats until the model stops calling tools or the step cap is hit. */
@@ -65,33 +78,52 @@ export async function runAgentLoop(
 ): Promise<LoopResult> {
   const messages: ModelMessage[] = [{ role: "user", content: initialUserMessage }];
   const steps: AgentStep[] = [];
+  let toolCallCount = 0;
 
-  for (let i = 0; i < MAX_TOOL_STEPS; i++) {
-    const response = await callModel({ system, messages, tools });
+  while (true) {
+    let response: ModelResponse;
+    try {
+      response = await callModel({ system, messages, tools });
+    } catch (error) {
+      return { steps, finalText: null, hitStepCap: false, error: `Model call failed: ${errorMessage(error)}`, messages };
+    }
     messages.push({ role: "assistant", content: response.content });
 
     const toolUseBlocks = response.content.filter((b): b is ContentBlock & { type: "tool_use" } => b.type === "tool_use");
 
     if (toolUseBlocks.length === 0 || response.stop_reason !== "tool_use") {
-      const textBlock = response.content.find((b) => b.type === "text");
-      const finalText = textBlock?.text ?? null;
+      const finalText = response.content
+        .filter((block) => block.type === "text" && block.text)
+        .map((block) => block.text)
+        .join("\n") || null;
       if (finalText) steps.push({ type: "final_text", text: finalText });
-      return { steps, finalText, hitStepCap: false, messages };
+      return { steps, finalText, hitStepCap: false, error: null, messages };
+    }
+
+    if (toolCallCount + toolUseBlocks.length > MAX_TOOL_CALLS) {
+      return { steps, finalText: null, hitStepCap: true, error: null, messages };
     }
 
     const toolResults: ToolResultBlock[] = [];
     for (const block of toolUseBlocks) {
-      const toolName = block.name!;
+      if (!block.id || !block.name) {
+        return { steps, finalText: null, hitStepCap: false, error: "Model produced a malformed tool call without an id or name", messages };
+      }
+      toolCallCount++;
+      const toolName = block.name;
       const toolInput = block.input ?? {};
       steps.push({ type: "tool_call", toolName, toolInput });
-      const output = await executeTool(toolName, toolInput);
+      let output: unknown;
+      try {
+        output = await executeTool(toolName, toolInput);
+      } catch (error) {
+        output = { error: `Tool execution failed: ${errorMessage(error)}` };
+      }
       steps.push({ type: "tool_result", toolName, toolOutput: output });
-      toolResults.push({ type: "tool_result", tool_use_id: block.id!, content: JSON.stringify(output) });
+      toolResults.push({ type: "tool_result", tool_use_id: block.id, content: serializeToolOutput(output) });
     }
     messages.push({ role: "user", content: toolResults });
   }
-
-  return { steps, finalText: null, hitStepCap: true, messages };
 }
 
 function tryParse(text: string): { success: true; data: unknown } | { success: false; error: string } {
@@ -114,9 +146,15 @@ export async function runAgentLoopWithValidation(
 ): Promise<{ outcome: InvestigationOutcome; steps: AgentStep[] }> {
   const loopResult = await runAgentLoop(system, initialUserMessage, tools, callModel, executeTool);
 
+  if (loopResult.error) {
+    return {
+      outcome: { status: "ai_error", reason: loopResult.error, rawResponse: loopResult.finalText ?? "" },
+      steps: loopResult.steps,
+    };
+  }
   if (loopResult.hitStepCap) {
     return {
-      outcome: { status: "ai_error", reason: `Hit the ${MAX_TOOL_STEPS}-tool-call cap without a final answer`, rawResponse: "" },
+      outcome: { status: "ai_error", reason: `Hit the ${MAX_TOOL_CALLS}-tool-call cap without a final answer`, rawResponse: "" },
       steps: loopResult.steps,
     };
   }
@@ -132,7 +170,15 @@ export async function runAgentLoopWithValidation(
       content: `Your previous response was not valid JSON matching the required schema. Error: ${attempt.reason}. Respond with ONLY the corrected JSON object — no markdown fences, no other text.`,
     },
   ];
-  const repairResponse = await callModel({ system, messages: repairMessages, tools });
+  let repairResponse: ModelResponse;
+  try {
+    repairResponse = await callModel({ system, messages: repairMessages, tools });
+  } catch (error) {
+    return {
+      outcome: { status: "ai_error", reason: `Repair model call failed: ${errorMessage(error)}`, rawResponse: loopResult.finalText ?? "" },
+      steps: loopResult.steps,
+    };
+  }
   const repairText = repairResponse.content.find((b) => b.type === "text")?.text ?? "";
   if (repairText) loopResult.steps.push({ type: "final_text", text: repairText });
 

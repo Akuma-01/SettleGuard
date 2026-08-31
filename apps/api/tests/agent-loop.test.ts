@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { runAgentLoop, runAgentLoopWithValidation, type ModelCaller, type ModelResponse } from "../src/agent/loop.js";
+import { MAX_TOOL_CALLS, runAgentLoop, runAgentLoopWithValidation, type ModelCaller, type ModelResponse } from "../src/agent/loop.js";
 import type { ToolDefinition } from "../src/agent/tools.js";
 
 const dummyTools: ToolDefinition[] = [{ name: "get_thing", description: "test tool", input_schema: { type: "object", properties: {}, required: [] } }];
@@ -68,7 +68,62 @@ describe("runAgentLoop — basic control flow", () => {
 
     expect(result.hitStepCap).toBe(true);
     expect(result.finalText).toBeNull();
-    expect(caller).toHaveBeenCalledTimes(8); // MAX_TOOL_STEPS
+    expect(executeTool).toHaveBeenCalledTimes(MAX_TOOL_CALLS);
+    // One final model turn is allowed after the eighth executed tool so it
+    // can answer; requesting a ninth tool is what trips the cap.
+    expect(caller).toHaveBeenCalledTimes(MAX_TOOL_CALLS + 1);
+  });
+
+  it("does not partially execute a parallel batch that would exceed the exact call budget", async () => {
+    let call = 0;
+    const caller: ModelCaller = vi.fn(async (): Promise<ModelResponse> => {
+      call++;
+      if (call <= MAX_TOOL_CALLS - 1) return toolUseResponse("get_thing", { id: call }, `t${call}`);
+      return {
+        content: [
+          { type: "tool_use", id: "overflow-a", name: "get_thing", input: { id: 8 } },
+          { type: "tool_use", id: "overflow-b", name: "get_thing", input: { id: 9 } },
+        ],
+        stop_reason: "tool_use",
+      };
+    });
+    const executeTool = vi.fn().mockResolvedValue({});
+
+    const result = await runAgentLoop("system", "investigate", dummyTools, caller, executeTool);
+
+    expect(result.hitStepCap).toBe(true);
+    expect(executeTool).toHaveBeenCalledTimes(MAX_TOOL_CALLS - 1);
+  });
+
+  it("feeds a thrown tool error back as an observation and lets the model recover", async () => {
+    const caller: ModelCaller = vi
+      .fn()
+      .mockResolvedValueOnce(toolUseResponse("get_thing", {}))
+      .mockResolvedValueOnce(textResponse('{"done":true}'));
+    const executeTool = vi.fn().mockRejectedValue(new Error("database temporarily unavailable"));
+
+    const result = await runAgentLoop("system", "investigate", dummyTools, caller, executeTool);
+
+    expect(result.error).toBeNull();
+    expect(result.finalText).toBe('{"done":true}');
+    expect(result.steps[1]).toMatchObject({ type: "tool_result", toolOutput: { error: expect.stringMatching(/database temporarily unavailable/) } });
+  });
+
+  it("returns a controlled error for a malformed tool call instead of using undefined fields", async () => {
+    const caller: ModelCaller = vi.fn().mockResolvedValue({
+      content: [{ type: "tool_use", input: {} }],
+      stop_reason: "tool_use",
+    });
+
+    const result = await runAgentLoop("system", "investigate", dummyTools, caller, vi.fn());
+
+    expect(result.error).toMatch(/malformed tool call/);
+  });
+
+  it("turns model transport failures into a controlled loop result", async () => {
+    const caller: ModelCaller = vi.fn().mockRejectedValue(new Error("provider timeout"));
+    const result = await runAgentLoop("system", "investigate", dummyTools, caller, vi.fn());
+    expect(result.error).toMatch(/Model call failed: provider timeout/);
   });
 });
 
@@ -149,5 +204,17 @@ describe("runAgentLoopWithValidation — structured output + repair retry", () =
 
     expect(outcome.status).toBe("ai_error");
     if (outcome.status === "ai_error") expect(outcome.reason).toMatch(/tool-call cap/);
+  });
+
+  it("returns AI_ERROR if the one repair call fails at the provider", async () => {
+    const caller: ModelCaller = vi
+      .fn()
+      .mockResolvedValueOnce(textResponse("invalid json"))
+      .mockRejectedValueOnce(new Error("repair timeout"));
+
+    const { outcome } = await runAgentLoopWithValidation("system", "investigate", dummyTools, caller, vi.fn());
+
+    expect(outcome.status).toBe("ai_error");
+    if (outcome.status === "ai_error") expect(outcome.reason).toMatch(/Repair model call failed: repair timeout/);
   });
 });

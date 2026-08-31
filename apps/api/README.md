@@ -26,7 +26,7 @@ Then:
 cp .env.example .env       # defaults already match Option A/B above
 npm install
 npm run db:push            # creates all 15 tables from src/db/schema.ts
-npm test                   # 92 tests across ingestion, reconciliation, benchmark, and agent layers
+npm test                   # 97 tests across ingestion, reconciliation, benchmark, and agent layers
 npm run ingest -- ../../datasets/demo demo-001
 npm run reconcile -- 1     # use whatever batch id the ingest above printed
 ```
@@ -123,6 +123,11 @@ invalid response gets one repair retry, then an honest `AI_ERROR`
 rather than a fabricated result. A minimal policy stub opens a review
 case when the agent flags `requiresHumanApproval` — not Phase 5's real
 policy engine yet, just enough to complete the loop end to end.
+
+The loop caps actual tool executions at eight, including parallel tool
+requests. Oversized batches are not partially executed; malformed calls,
+provider failures, and thrown tool errors become explicit controlled
+outcomes rather than crashing or leaving an investigation ambiguous.
 
 Two controlled workflow actions (`create_review_case` and
 `propose_adjustment`) live in a separate catalog. They require trusted
