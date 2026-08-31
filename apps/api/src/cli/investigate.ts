@@ -6,7 +6,7 @@
 import "dotenv/config";
 import path from "node:path";
 import { investigateException } from "../agent/investigate.js";
-import { anthropicCaller } from "../agent/client.js";
+import { anthropicCaller, assertAnthropicConfigured } from "../agent/client.js";
 import { pool } from "../db/client.js";
 
 async function main() {
@@ -16,6 +16,7 @@ async function main() {
     process.exit(1);
   }
   const exceptionId = parseInt(exceptionIdArg, 10);
+  assertAnthropicConfigured();
   const outputPath = path.resolve(process.cwd(), `investigation-${exceptionId}.html`);
 
   console.log(`Investigating exception ${exceptionId}...`);

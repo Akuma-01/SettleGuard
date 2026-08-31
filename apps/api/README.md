@@ -26,7 +26,7 @@ Then:
 cp .env.example .env       # defaults already match Option A/B above
 npm install
 npm run db:push            # creates all 15 tables from src/db/schema.ts
-npm test                   # 110 tests across ingestion, reconciliation, benchmark, and agent layers
+npm test                   # 113 tests across ingestion, reconciliation, benchmark, and agent layers
 npm run ingest -- ../../datasets/demo demo-001
 npm run reconcile -- 1     # use whatever batch id the ingest above printed
 ```
@@ -148,6 +148,18 @@ AI errors, and unsafe forced resolutions. An explicit `safe_unresolved`
 mode requires `insufficient_evidence` + `no_action` rather than rewarding
 the model for guessing.
 
+After `npm run benchmark`, use its reconciliation run ID to exercise one
+real exception from every MVP class with the live model:
+
+```bash
+npm run agent:regression -- <reconciliationRunId> [outputDirectory]
+```
+
+The command requires `ANTHROPIC_API_KEY`, writes a separate evidence page
+for each case, prints pass rate/AI-error/unsafe-resolution counts, and
+exits nonzero if any case fails. The six-case set includes an unknown
+adjustment that must remain safely unresolved.
+
 ## What's here
 
 ```text
@@ -177,6 +189,7 @@ src/
 │   ├── analysis-tools.ts          deterministic calculation/comparison tools
 │   ├── controlled-actions.ts        authorization-gated review/proposal actions
 │   ├── regression.ts                  multi-scenario agent evaluation and scoring
+│   ├── regression-cases.ts              six real exception fixtures + live runner
 │   ├── system-prompt.ts           golden rule, structured output requirement
 │   ├── loop.ts                      tool-calling loop + repair-retry (no SDK import — testable without a key)
 │   ├── client.ts                      real Anthropic SDK wrapper (only file that imports it)
@@ -186,6 +199,7 @@ src/
     ├── ingest.ts        npm run ingest -- <dir> [batch-name]
     ├── reconcile.ts       npm run reconcile -- <batchId>
     ├── benchmark.ts         npm run benchmark [-- --dataset demo|benchmark]
+    ├── agent-regression.ts    npm run agent:regression -- <runId> [outputDirectory]
     └── investigate.ts         npm run investigate -- <exceptionId>
 ```
 

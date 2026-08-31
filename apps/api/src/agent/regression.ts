@@ -4,6 +4,7 @@ import type { InvestigationOutcome } from "./schema.js";
 export interface AgentRegressionCase {
   name: string;
   exceptionId: number;
+  exceptionType: string;
   expectedRootCauses: string[];
   expectedActions: string[];
   requiresHumanApproval: boolean;

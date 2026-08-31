@@ -9,6 +9,7 @@
     "reconcile": "tsx src/cli/reconcile.ts",
     "benchmark": "tsx src/cli/benchmark.ts",
     "investigate": "tsx src/cli/investigate.ts",
+    "agent:regression": "tsx src/cli/agent-regression.ts",
     "ingest": "tsx src/cli/ingest.ts",
     "test": "vitest run"
   },

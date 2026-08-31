@@ -5,6 +5,7 @@ import type { InvestigationOutcome, InvestigationResult } from "../src/agent/sch
 const classificationCase: AgentRegressionCase = {
   name: "unknown adjustment",
   exceptionId: 10,
+  exceptionType: "UNKNOWN_ADJUSTMENT",
   expectedRootCauses: ["unknown_adjustment"],
   expectedActions: ["create_review_case", "propose_adjustment"],
   requiresHumanApproval: true,

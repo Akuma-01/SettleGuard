@@ -23,12 +23,13 @@ npm run proof && npm run generate:demo && npm run generate:benchmark && npm run 
 cd apps/api && npm install
 cp .env.example .env       # see apps/api/README.md for Postgres + Anthropic setup
 npm run db:push
-npm test                    # 110 tests
+npm test                    # 113 tests
 npm run benchmark           # 100% precision/recall, unattended
 
 npm run ingest -- ../../datasets/agent-slice agent-slice-001
 npm run reconcile -- <batchId>       # printed by ingest above
 npm run investigate -- <exceptionId>  # printed by reconcile above — needs ANTHROPIC_API_KEY
+npm run agent:regression -- <runId>   # six real exception classes — needs ANTHROPIC_API_KEY
 ```
 
 ## What's built
@@ -53,9 +54,9 @@ npm run investigate -- <exceptionId>  # printed by reconcile above — needs ANT
 
 ## What's next
 
-Day 8: connect real exception fixtures to the regression scorer and run
-the agent contract across several classes, including an honest
-insufficient-evidence outcome. Refine only where those evaluations expose a weakness.
+Day 8: run the new live six-class regression command with an Anthropic
+API key, preserve the measured result, and refine only where that
+evaluation exposes a weakness.
 `npm run benchmark` still needs
 to pass 100%/100% after — the agent is additive, never a replacement
 for the deterministic core underneath it. Full 14-day pace is in the

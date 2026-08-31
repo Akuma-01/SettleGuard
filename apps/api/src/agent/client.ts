@@ -12,10 +12,14 @@ import type { ModelCaller } from "./loop.js";
 const MODEL = process.env.SETTLEGUARD_AGENT_MODEL ?? "claude-sonnet-5";
 
 let client: Anthropic | null = null;
-function getClient(): Anthropic {
+export function assertAnthropicConfigured(): void {
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error("ANTHROPIC_API_KEY is not set. Add it to apps/api/.env to run a real investigation.");
   }
+}
+
+function getClient(): Anthropic {
+  assertAnthropicConfigured();
   client ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   return client;
 }
