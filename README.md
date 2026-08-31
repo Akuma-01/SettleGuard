@@ -6,14 +6,13 @@ and reports measured match/exception accuracy with an honest unresolved list.
 
 Built for the Razorpay AI Buildathon, Track 04 — AI Finance Controller.
 
-**Status: Day 6 — Phases 0-3 done; Phase 4 Step 1 (agent vertical
-slice) done.** The full loop — load exception → agent investigates →
+**Status: Day 7 in progress — Phases 0-3 and the agent vertical slice
+are done; the full read-only evidence catalog is now built.** The full loop — load exception → agent investigates →
 policy decides → evidence page displays it — is wired end to end on a
 tiny dataset. Every piece except the live model call is tested against
 real Postgres or scripted fake models (no Anthropic API key available
-in the build sandbox); the CLI itself fails clearly and safely without
-one, ready for your own key. See `docs/PHASE_0_SCOPE.md` for the frozen
-scope and `docs/COMMIT_GUIDE.md` for the commit log.
+real Postgres or scripted fake models; the CLI itself fails clearly and
+safely without an API key, ready for your own key.
 
 ## Run it
 
@@ -24,7 +23,7 @@ npm run proof && npm run generate:demo && npm run generate:benchmark && npm run 
 cd apps/api && npm install
 cp .env.example .env       # see apps/api/README.md for Postgres + Anthropic setup
 npm run db:push
-npm test                    # 76 tests
+npm test                    # 81 tests
 npm run benchmark           # 100% precision/recall, unattended
 
 npm run ingest -- ../../datasets/agent-slice agent-slice-001
@@ -42,17 +41,18 @@ npm run investigate -- <exceptionId>  # printed by reconcile above — needs ANT
 - **Phase 3** (`apps/api/src/benchmark/`) — `npm run benchmark`: one
   unattended command, 100% precision/recall at both demo and benchmark
   scale (Day 5).
-- **Phase 4, Step 1** (`apps/api/src/agent/`) — the agent vertical
-  slice (Day 6): 5 read-only evidence tools, a tool-calling loop with
+- **Phase 4** (`apps/api/src/agent/`) — the agent vertical slice plus
+  Day 7's complete read-only evidence layer: 10 input-validated tools,
+  a tool-calling loop with
   a step cap, Zod-validated structured output with one repair retry
   before an honest `AI_ERROR`, a minimal policy stub, and a plain
-  static HTML evidence page. Not the full ~20-tool catalog yet — that's
-  Day 7-8's job, now that the wiring is proven.
+  static HTML evidence page. Deterministic analysis and controlled-action
+  tools remain for the next Day 7-8 milestones.
 
 ## What's next
 
-Phase 4, Steps 2-5: the full tool layer (analysis + controlled-action
-tools), a more capable loop, and a refined system prompt informed by
+Phase 4, Steps 2-5: deterministic analysis and controlled-action tools,
+a more capable loop, and a refined system prompt informed by
 what Day 6's slice actually needed. `npm run benchmark` still needs
 to pass 100%/100% after — the agent is additive, never a replacement
 for the deterministic core underneath it. Full 14-day pace is in the
@@ -70,7 +70,7 @@ settleguard/
 │   ├── generate-dataset.ts
 │   └── generator/
 ├── datasets/{demo,benchmark,agent-slice}/
-├── docs/{PHASE_0_SCOPE.md,COMMIT_GUIDE.md}
+├── docs/SCOPE_AND_DECISIONS.md
 ```
 
 `apps/web` and `packages/` get created when their phases start (the
