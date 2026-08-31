@@ -3,8 +3,13 @@ import { and, eq, gte, ilike, inArray, lte } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/client.js";
 import { adjustments, bankTransactions, exceptions, payments, refunds, settlementItems, settlements } from "../db/schema.js";
+import { analysisToolDefinitions, analysisToolNames, executeAnalysisTool } from "./analysis-tools.js";
 
-interface ToolProperty { type: "integer" | "string"; description: string }
+export interface ToolProperty {
+  type: "integer" | "string" | "array";
+  description: string;
+  items?: { type: "integer" | "string" };
+}
 export interface ToolDefinition {
   name: string;
   description: string;
@@ -16,7 +21,7 @@ function defineTool(name: string, description: string, properties: Record<string
   return { name, description, input_schema: { type: "object", properties, required: Object.keys(properties), additionalProperties: false } };
 }
 
-export const toolDefinitions: ToolDefinition[] = [
+const evidenceToolDefinitions: ToolDefinition[] = [
   defineTool("get_exception", "Fetch the exception under investigation, including deterministic evidence already gathered.", { exceptionId: idProperty("Internal exceptions.id") }),
   defineTool("get_payment", "Fetch one payment record by its internal ID.", { paymentId: idProperty("Internal payments.id") }),
   defineTool("get_refund", "Fetch one refund record by its internal ID.", { refundId: idProperty("Internal refunds.id") }),
@@ -42,6 +47,8 @@ export const toolDefinitions: ToolDefinition[] = [
     },
   },
 ];
+
+export const toolDefinitions: ToolDefinition[] = [...evidenceToolDefinitions, ...analysisToolDefinitions];
 
 const positiveId = z.number().int().positive();
 const idSchemas = {
@@ -108,6 +115,7 @@ function invalidInput(error: z.ZodError) {
 }
 
 export async function executeTool(name: string, input: Record<string, unknown>): Promise<unknown> {
+  if (analysisToolNames.has(name)) return executeAnalysisTool(name, input);
   if (name === "find_bank_credits") {
     const parsed = bankCreditSearchSchema.safeParse(input);
     return parsed.success ? findBankCredits(parsed.data) : invalidInput(parsed.error);

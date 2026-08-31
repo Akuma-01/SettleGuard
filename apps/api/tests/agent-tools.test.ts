@@ -49,6 +49,7 @@ describe("tool definitions", () => {
     expect(toolDefinitions.map((tool) => tool.name)).toEqual([
       "get_exception", "get_payment", "get_refund", "get_settlement", "get_bank_transaction",
       "get_adjustment", "get_adjustments", "get_related_payments", "get_related_refunds", "find_bank_credits",
+      "calculate_expected_settlement", "calculate_expected_fees", "compare_settlement_to_bank", "score_candidate_match",
     ]);
     for (const tool of toolDefinitions) expect(tool.input_schema.additionalProperties).toBe(false);
   });

@@ -7,7 +7,7 @@ and reports measured match/exception accuracy with an honest unresolved list.
 Built for the Razorpay AI Buildathon, Track 04 — AI Finance Controller.
 
 **Status: Day 7 in progress — Phases 0-3 and the agent vertical slice
-are done; the full read-only evidence catalog is now built.** The full loop — load exception → agent investigates →
+are done; evidence and safe deterministic-analysis tools are now built.** The full loop — load exception → agent investigates →
 policy decides → evidence page displays it — is wired end to end on a
 tiny dataset. Every piece except the live model call is tested against
 real Postgres or scripted fake models (no Anthropic API key available
@@ -23,7 +23,7 @@ npm run proof && npm run generate:demo && npm run generate:benchmark && npm run 
 cd apps/api && npm install
 cp .env.example .env       # see apps/api/README.md for Postgres + Anthropic setup
 npm run db:push
-npm test                    # 81 tests
+npm test                    # 87 tests
 npm run benchmark           # 100% precision/recall, unattended
 
 npm run ingest -- ../../datasets/agent-slice agent-slice-001
@@ -42,17 +42,18 @@ npm run investigate -- <exceptionId>  # printed by reconcile above — needs ANT
   unattended command, 100% precision/recall at both demo and benchmark
   scale (Day 5).
 - **Phase 4** (`apps/api/src/agent/`) — the agent vertical slice plus
-  Day 7's complete read-only evidence layer: 10 input-validated tools,
+  Day 7's tool layer so far: 10 input-validated evidence tools and 4
+  deterministic analysis tools,
   a tool-calling loop with
   a step cap, Zod-validated structured output with one repair retry
   before an honest `AI_ERROR`, a minimal policy stub, and a plain
-  static HTML evidence page. Deterministic analysis and controlled-action
-  tools remain for the next Day 7-8 milestones.
+  static HTML evidence page. Controlled-action tools remain for the next
+  Day 7-8 milestone.
 
 ## What's next
 
-Phase 4, Steps 2-5: deterministic analysis and controlled-action tools,
-a more capable loop, and a refined system prompt informed by
+Phase 4, Steps 2-5: controlled-action tools, a more capable loop, and a
+refined system prompt informed by
 what Day 6's slice actually needed. `npm run benchmark` still needs
 to pass 100%/100% after — the agent is additive, never a replacement
 for the deterministic core underneath it. Full 14-day pace is in the
