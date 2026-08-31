@@ -2,12 +2,16 @@ import { describe, expect, it } from "vitest";
 import { investigationResultSchema } from "../src/agent/schema.js";
 
 const validResult = {
-  rootCause: "Adjustment likely corresponds to a chargeback fee not yet linked in the source system.",
+  exceptionId: 42,
+  rootCause: "unknown_adjustment" as const,
   confidence: 0.6,
-  evidence: ["Settlement gross matches all confirmed payments exactly", "No refund in this settlement is close to the adjustment amount"],
-  recommendedAction: "human_review" as const,
+  evidence: [
+    { recordId: "adjustment:100", reason: "The verified adjustment has no source reference." },
+    { recordId: "settlement:20", reason: "Confirmed settlement context does not explain the deduction." },
+  ],
+  recommendedAction: "create_review_case" as const,
   requiresHumanApproval: true,
-  explanation: "The adjustment has no source_reference and doesn't match any payment or refund amount in the settlement.",
+  explanation: "The unexplained adjustment requires source-system review.",
 };
 
 describe("investigationResultSchema", () => {
@@ -15,9 +19,10 @@ describe("investigationResultSchema", () => {
     expect(investigationResultSchema.safeParse(validResult).success).toBe(true);
   });
 
-  it("rejects a missing field", () => {
-    const { rootCause, ...rest } = validResult;
-    expect(investigationResultSchema.safeParse(rest).success).toBe(false);
+  it("rejects missing and additional fields", () => {
+    const { rootCause, ...missing } = validResult;
+    expect(investigationResultSchema.safeParse(missing).success).toBe(false);
+    expect(investigationResultSchema.safeParse({ ...validResult, policyDecision: "auto_resolve" }).success).toBe(false);
   });
 
   it("rejects confidence outside 0-1", () => {
@@ -25,17 +30,25 @@ describe("investigationResultSchema", () => {
     expect(investigationResultSchema.safeParse({ ...validResult, confidence: -0.1 }).success).toBe(false);
   });
 
-  it("rejects an empty evidence array — must cite at least one thing", () => {
+  it("requires structured evidence with a record ID and reason", () => {
     expect(investigationResultSchema.safeParse({ ...validResult, evidence: [] }).success).toBe(false);
+    expect(investigationResultSchema.safeParse({ ...validResult, evidence: ["unverifiable prose"] }).success).toBe(false);
+    expect(investigationResultSchema.safeParse({ ...validResult, evidence: [{ recordId: "", reason: "x" }] }).success).toBe(false);
   });
 
-  it("rejects a recommendedAction outside the enum", () => {
-    expect(investigationResultSchema.safeParse({ ...validResult, recommendedAction: "just_ignore_it" }).success).toBe(false);
+  it("rejects policy outcomes such as auto_resolve as recommended actions", () => {
+    expect(investigationResultSchema.safeParse({ ...validResult, recommendedAction: "auto_resolve" }).success).toBe(false);
   });
 
-  it("accepts all three valid recommendedAction values", () => {
-    for (const action of ["auto_resolve", "human_review", "unresolved"] as const) {
+  it("accepts every concrete recommendation value", () => {
+    for (const action of ["link_record", "reclassify", "rerun_reconciliation", "create_review_case", "propose_adjustment", "no_action"] as const) {
       expect(investigationResultSchema.safeParse({ ...validResult, recommendedAction: action }).success).toBe(true);
+    }
+  });
+
+  it("accepts every supported root-cause label", () => {
+    for (const rootCause of ["duplicate_refund", "missing_refund_link", "fee_mismatch", "unknown_adjustment", "missing_bank_credit", "timing_difference", "ambiguous_match", "insufficient_evidence", "other"] as const) {
+      expect(investigationResultSchema.safeParse({ ...validResult, rootCause }).success).toBe(true);
     }
   });
 });

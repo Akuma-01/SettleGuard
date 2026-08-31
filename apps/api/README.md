@@ -26,7 +26,7 @@ Then:
 cp .env.example .env       # defaults already match Option A/B above
 npm install
 npm run db:push            # creates all 15 tables from src/db/schema.ts
-npm test                   # 97 tests across ingestion, reconciliation, benchmark, and agent layers
+npm test                   # 102 tests across ingestion, reconciliation, benchmark, and agent layers
 npm run ingest -- ../../datasets/demo demo-001
 npm run reconcile -- 1     # use whatever batch id the ingest above printed
 ```
@@ -89,7 +89,7 @@ API layer) — it's the fastest way to confirm new work hasn't quietly
 regressed the deterministic core underneath it. Exits non-zero on
 anything less than 100%/100%, so it's CI-friendly too.
 
-## The agent (Phase 4 — Day 7 in progress)
+## The agent (Phase 4 — Day 7 complete)
 
 ```bash
 npm run investigate -- <exceptionId>
@@ -117,7 +117,7 @@ The model-facing catalog has 10 read-only evidence tools and 4
 deterministic analysis tools. It can fetch related financial records,
 reconstruct expected settlements and fees, compare bank credits, and
 score candidate matches without calculating money itself. It always ends by producing
-Zod-validated structured JSON (`rootCause`, `confidence`, `evidence`,
+Zod-validated structured JSON (`exceptionId`, `rootCause`, `confidence`, `evidence`,
 `recommendedAction`, `requiresHumanApproval`, `explanation`); an
 invalid response gets one repair retry, then an honest `AI_ERROR`
 rather than a fabricated result. A minimal policy stub opens a review

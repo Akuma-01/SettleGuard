@@ -143,6 +143,7 @@ export async function runAgentLoopWithValidation(
   tools: ToolDefinition[],
   callModel: ModelCaller,
   executeTool: ToolExecutor,
+  expectedExceptionId?: number,
 ): Promise<{ outcome: InvestigationOutcome; steps: AgentStep[] }> {
   const loopResult = await runAgentLoop(system, initialUserMessage, tools, callModel, executeTool);
 
@@ -159,7 +160,7 @@ export async function runAgentLoopWithValidation(
     };
   }
 
-  const attempt = validateFinalText(loopResult.finalText);
+  const attempt = validateFinalText(loopResult.finalText, expectedExceptionId);
   if (attempt.status === "completed") return { outcome: attempt, steps: loopResult.steps };
 
   // One repair retry, continuing the same conversation.
@@ -182,15 +183,18 @@ export async function runAgentLoopWithValidation(
   const repairText = repairResponse.content.find((b) => b.type === "text")?.text ?? "";
   if (repairText) loopResult.steps.push({ type: "final_text", text: repairText });
 
-  const repairAttempt = validateFinalText(repairText);
+  const repairAttempt = validateFinalText(repairText, expectedExceptionId);
   return { outcome: repairAttempt, steps: loopResult.steps };
 }
 
-function validateFinalText(text: string | null): InvestigationOutcome {
+function validateFinalText(text: string | null, expectedExceptionId?: number): InvestigationOutcome {
   if (!text) return { status: "ai_error", reason: "model produced no final text response", rawResponse: "" };
   const parsed = tryParse(text);
   if (!parsed.success) return { status: "ai_error", reason: `not valid JSON: ${parsed.error}`, rawResponse: text };
   const validated = investigationResultSchema.safeParse(parsed.data);
   if (!validated.success) return { status: "ai_error", reason: `schema validation failed: ${validated.error.message}`, rawResponse: text };
+  if (expectedExceptionId !== undefined && validated.data.exceptionId !== expectedExceptionId) {
+    return { status: "ai_error", reason: `schema validation failed: exceptionId must be ${expectedExceptionId}`, rawResponse: text };
+  }
   return { status: "completed", result: validated.data };
 }

@@ -35,10 +35,11 @@ describe("investigateException — full vertical slice, scripted model", () => {
       if (call === 1) return toolUseResponse("get_adjustment", { adjustmentId });
       return textResponse(
         JSON.stringify({
-          rootCause: "No matching payment or refund explains this deduction — likely an unreconciled chargeback or gateway fee.",
+          exceptionId,
+          rootCause: "unknown_adjustment",
           confidence: 0.5,
-          evidence: [`Adjustment ${adjustmentId} has source_reference: null, confirmed via get_adjustment`],
-          recommendedAction: "human_review",
+          evidence: [{ recordId: `adjustment:${adjustmentId}`, reason: "source_reference is null, confirmed via get_adjustment" }],
+          recommendedAction: "create_review_case",
           requiresHumanApproval: true,
           explanation: "The deduction has no linked source record; a human should confirm against the payment gateway's own records before resolving.",
         }),
@@ -53,7 +54,7 @@ describe("investigateException — full vertical slice, scripted model", () => {
     // 2. investigations row was written with the right structured fields
     const [invRow] = await db.select().from(investigations).where(eq(investigations.id, summary.investigationId));
     expect(invRow!.status).toBe("completed");
-    expect(invRow!.recommendedAction).toBe("human_review");
+    expect(invRow!.recommendedAction).toBe("create_review_case");
     expect(invRow!.requiresHumanApproval).toBe(true);
 
     // 3. Policy correctly opened a review case, since requiresHumanApproval was true
@@ -65,7 +66,7 @@ describe("investigateException — full vertical slice, scripted model", () => {
     expect(existsSync(outputPath)).toBe(true);
     const html = readFileSync(outputPath, "utf-8");
     expect(html).toContain("get_adjustment");
-    expect(html).toContain("human_review");
+    expect(html).toContain("create_review_case");
     expect(html).toContain("Review case");
   });
 

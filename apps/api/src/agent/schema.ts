@@ -13,13 +13,34 @@
 import { z } from "zod";
 
 export const investigationResultSchema = z.object({
-  rootCause: z.string().min(1, "rootCause must not be empty"),
+  exceptionId: z.number().int().positive(),
+  rootCause: z.enum([
+    "duplicate_refund",
+    "missing_refund_link",
+    "fee_mismatch",
+    "unknown_adjustment",
+    "missing_bank_credit",
+    "timing_difference",
+    "ambiguous_match",
+    "insufficient_evidence",
+    "other",
+  ]),
   confidence: z.number().min(0).max(1),
-  evidence: z.array(z.string()).min(1, "cite at least one piece of evidence gathered"),
-  recommendedAction: z.enum(["auto_resolve", "human_review", "unresolved"]),
+  evidence: z.array(z.object({
+    recordId: z.string().trim().min(1),
+    reason: z.string().trim().min(1),
+  })).min(1, "cite at least one evidence record"),
+  recommendedAction: z.enum([
+    "link_record",
+    "reclassify",
+    "rerun_reconciliation",
+    "create_review_case",
+    "propose_adjustment",
+    "no_action",
+  ]),
   requiresHumanApproval: z.boolean(),
   explanation: z.string().min(1, "explanation must not be empty"),
-});
+}).strict();
 
 export type InvestigationResult = z.infer<typeof investigationResultSchema>;
 

@@ -10,6 +10,18 @@ function textResponse(text: string): ModelResponse {
 function toolUseResponse(name: string, input: Record<string, unknown>, id = "tool_1"): ModelResponse {
   return { content: [{ type: "tool_use", id, name, input }], stop_reason: "tool_use" };
 }
+function validResult(overrides: Record<string, unknown> = {}) {
+  return JSON.stringify({
+    exceptionId: 42,
+    rootCause: "unknown_adjustment",
+    confidence: 0.8,
+    evidence: [{ recordId: "adjustment:100", reason: "Verified source reference is absent." }],
+    recommendedAction: "create_review_case",
+    requiresHumanApproval: true,
+    explanation: "A reviewer should verify the source system.",
+    ...overrides,
+  });
+}
 
 describe("runAgentLoop — basic control flow", () => {
   it("calls a tool once, then returns a final answer with no more tool calls", async () => {
@@ -129,27 +141,18 @@ describe("runAgentLoop — basic control flow", () => {
 
 describe("runAgentLoopWithValidation — structured output + repair retry", () => {
   it("returns a completed outcome for a valid first response", async () => {
-    const valid = JSON.stringify({
-      rootCause: "test",
-      confidence: 0.8,
-      evidence: ["fact one"],
-      recommendedAction: "human_review",
-      requiresHumanApproval: true,
-      explanation: "test explanation",
-    });
+    const valid = validResult();
     const caller: ModelCaller = vi.fn().mockResolvedValueOnce(textResponse(valid));
     const executeTool = vi.fn();
 
     const { outcome } = await runAgentLoopWithValidation("system", "investigate", dummyTools, caller, executeTool);
 
     expect(outcome.status).toBe("completed");
-    if (outcome.status === "completed") expect(outcome.result.rootCause).toBe("test");
+    if (outcome.status === "completed") expect(outcome.result.rootCause).toBe("unknown_adjustment");
   });
 
   it("strips markdown fences before parsing, since models sometimes add them despite instructions not to", async () => {
-    const valid = '```json\n' + JSON.stringify({
-      rootCause: "test", confidence: 0.5, evidence: ["x"], recommendedAction: "unresolved", requiresHumanApproval: true, explanation: "y",
-    }) + '\n```';
+    const valid = `\`\`\`json\n${validResult({ rootCause: "insufficient_evidence", confidence: 0.5, recommendedAction: "no_action" })}\n\`\`\``;
     const caller: ModelCaller = vi.fn().mockResolvedValueOnce(textResponse(valid));
 
     const { outcome } = await runAgentLoopWithValidation("system", "investigate", dummyTools, caller, vi.fn());
@@ -158,9 +161,7 @@ describe("runAgentLoopWithValidation — structured output + repair retry", () =
   });
 
   it("retries once on invalid JSON and succeeds if the repair response is valid", async () => {
-    const valid = JSON.stringify({
-      rootCause: "fixed", confidence: 0.7, evidence: ["x"], recommendedAction: "human_review", requiresHumanApproval: true, explanation: "y",
-    });
+    const valid = validResult({ rootCause: "other", confidence: 0.7 });
     const caller: ModelCaller = vi
       .fn()
       .mockResolvedValueOnce(textResponse("not valid json at all"))
@@ -170,7 +171,7 @@ describe("runAgentLoopWithValidation — structured output + repair retry", () =
 
     expect(caller).toHaveBeenCalledTimes(2);
     expect(outcome.status).toBe("completed");
-    if (outcome.status === "completed") expect(outcome.result.rootCause).toBe("fixed");
+    if (outcome.status === "completed") expect(outcome.result.rootCause).toBe("other");
   });
 
   it("returns AI_ERROR — never a fabricated result — if the repair attempt is ALSO invalid", async () => {
@@ -194,6 +195,17 @@ describe("runAgentLoopWithValidation — structured output + repair retry", () =
 
     expect(outcome.status).toBe("ai_error");
     if (outcome.status === "ai_error") expect(outcome.reason).toMatch(/schema validation failed/);
+  });
+
+  it("rejects a result for a different exception ID", async () => {
+    const caller: ModelCaller = vi.fn()
+      .mockResolvedValueOnce(textResponse(validResult({ exceptionId: 99 })))
+      .mockResolvedValueOnce(textResponse(validResult({ exceptionId: 99 })));
+
+    const { outcome } = await runAgentLoopWithValidation("system", "investigate", dummyTools, caller, vi.fn(), 42);
+
+    expect(outcome.status).toBe("ai_error");
+    if (outcome.status === "ai_error") expect(outcome.reason).toMatch(/exceptionId must be 42/);
   });
 
   it("returns AI_ERROR when the step cap is hit, without attempting to validate a nonexistent final answer", async () => {

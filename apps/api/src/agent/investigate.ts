@@ -22,7 +22,7 @@ import { runAgentLoopWithValidation, type ModelCaller } from "./loop.js";
 import { renderEvidencePage } from "./evidence-html.js";
 
 const AGENT_MODEL = process.env.SETTLEGUARD_AGENT_MODEL ?? "claude-sonnet-5";
-const PROMPT_VERSION = "day6-v1";
+const PROMPT_VERSION = "day7-v2";
 
 export interface InvestigationSummary {
   investigationId: number;
@@ -51,7 +51,7 @@ Deterministic evidence already gathered: ${JSON.stringify(exception.deterministi
 
 Use the available tools to gather whatever further context you need, then respond with the required structured JSON.`;
 
-  const { outcome, steps } = await runAgentLoopWithValidation(SYSTEM_PROMPT, initialMessage, toolDefinitions, callModel, executeTool);
+  const { outcome, steps } = await runAgentLoopWithValidation(SYSTEM_PROMPT, initialMessage, toolDefinitions, callModel, executeTool, exceptionId);
 
   // Persist the trace, in order.
   const eventRows = steps.map((step, i) => ({

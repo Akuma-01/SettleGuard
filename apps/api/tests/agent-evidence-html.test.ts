@@ -31,10 +31,11 @@ describe("renderEvidencePage — completed outcome", () => {
     outcome: {
       status: "completed",
       result: {
-        rootCause: "Likely an unreconciled chargeback fee",
+        exceptionId: 463,
+        rootCause: "unknown_adjustment",
         confidence: 0.55,
-        evidence: ["No matching payment or refund amount in the settlement"],
-        recommendedAction: "human_review",
+        evidence: [{ recordId: "adjustment:100", reason: "No matching payment or refund amount exists in the settlement." }],
+        recommendedAction: "create_review_case",
         requiresHumanApproval: true,
         explanation: "Needs a human to confirm against the payment gateway's chargeback records.",
       },
@@ -54,9 +55,10 @@ describe("renderEvidencePage — completed outcome", () => {
   });
 
   it("includes the root cause, confidence, and recommended action", () => {
-    expect(html).toContain("Likely an unreconciled chargeback fee");
+    expect(html).toContain("unknown_adjustment");
     expect(html).toContain("55%");
-    expect(html).toContain("human_review");
+    expect(html).toContain("create_review_case");
+    expect(html).toContain("adjustment:100");
   });
 
   it("includes the policy decision", () => {

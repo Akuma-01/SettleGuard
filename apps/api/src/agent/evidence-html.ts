@@ -51,7 +51,7 @@ export function renderEvidencePage(data: EvidencePageData): string {
           <dt>Confidence</dt><dd>${(outcome.result.confidence * 100).toFixed(0)}%</dd>
           <dt>Recommended action</dt><dd><span class="badge badge-${esc(outcome.result.recommendedAction)}">${esc(outcome.result.recommendedAction)}</span></dd>
           <dt>Requires human approval</dt><dd>${outcome.result.requiresHumanApproval ? "Yes" : "No"}</dd>
-          <dt>Evidence cited</dt><dd><ul>${outcome.result.evidence.map((e) => `<li>${esc(e)}</li>`).join("")}</ul></dd>
+          <dt>Evidence cited</dt><dd><ul>${outcome.result.evidence.map((e) => `<li><code>${esc(e.recordId)}</code> — ${esc(e.reason)}</li>`).join("")}</ul></dd>
           <dt>Explanation</dt><dd>${esc(outcome.result.explanation)}</dd>
         </dl>
       </div>`
@@ -60,7 +60,7 @@ export function renderEvidencePage(data: EvidencePageData): string {
         <h2>AI_ERROR — no result produced</h2>
         <p>${esc(outcome.reason)}</p>
         ${outcome.rawResponse ? `<pre>${esc(outcome.rawResponse)}</pre>` : ""}
-        <p class="note">This is not a bug being hidden — the agent could not produce a validated result, so none is shown here. See docs/COMMIT_GUIDE.md-style honesty: an AI_ERROR is reported as exactly that, never silently guessed at.</p>
+        <p class="note">The agent could not produce a validated result, so none is shown here. An AI_ERROR is reported explicitly, never silently replaced with a guess.</p>
       </div>`;
 
   return `<!DOCTYPE html>
@@ -76,9 +76,9 @@ export function renderEvidencePage(data: EvidencePageData): string {
   .result-ok { border-color: #2e7d32; background: #f1f8f2; }
   .result-error { border-color: #c62828; background: #fdf1f1; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #eee; font-size: 0.85em; }
-  .badge-human_review { background: #fff3cd; }
-  .badge-unresolved { background: #f8d7da; }
-  .badge-auto_resolve { background: #d4edda; }
+  .badge-create_review_case, .badge-propose_adjustment { background: #fff3cd; }
+  .badge-no_action { background: #f8d7da; }
+  .badge-link_record, .badge-reclassify, .badge-rerun_reconciliation { background: #d4edda; }
   dt { font-weight: 600; margin-top: 10px; }
   dd { margin-left: 0; }
   .step { border-left: 3px solid #ccc; padding: 6px 12px; margin: 8px 0; font-size: 0.92em; }
