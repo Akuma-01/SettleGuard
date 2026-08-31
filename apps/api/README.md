@@ -26,7 +26,7 @@ Then:
 cp .env.example .env       # defaults already match Option A/B above
 npm install
 npm run db:push            # creates all 15 tables from src/db/schema.ts
-npm test                   # 102 tests across ingestion, reconciliation, benchmark, and agent layers
+npm test                   # 110 tests across ingestion, reconciliation, benchmark, and agent layers
 npm run ingest -- ../../datasets/demo demo-001
 npm run reconcile -- 1     # use whatever batch id the ingest above printed
 ```
@@ -142,6 +142,12 @@ entire tool-calling + repair-retry loop via scripted fake models
 (`npm test` covers all of it, plus a full integration test that runs
 `investigateException` end to end with a scripted response).
 
+Day 8 also adds a model-agnostic regression scorer. It measures exact
+exception identity, accepted root cause/action, approval requirements,
+AI errors, and unsafe forced resolutions. An explicit `safe_unresolved`
+mode requires `insufficient_evidence` + `no_action` rather than rewarding
+the model for guessing.
+
 ## What's here
 
 ```text
@@ -170,6 +176,7 @@ src/
 │   ├── tools.ts                 read-only evidence catalog + dispatcher
 │   ├── analysis-tools.ts          deterministic calculation/comparison tools
 │   ├── controlled-actions.ts        authorization-gated review/proposal actions
+│   ├── regression.ts                  multi-scenario agent evaluation and scoring
 │   ├── system-prompt.ts           golden rule, structured output requirement
 │   ├── loop.ts                      tool-calling loop + repair-retry (no SDK import — testable without a key)
 │   ├── client.ts                      real Anthropic SDK wrapper (only file that imports it)

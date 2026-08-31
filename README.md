@@ -6,8 +6,8 @@ and reports measured match/exception accuracy with an honest unresolved list.
 
 Built for the Razorpay AI Buildathon, Track 04 — AI Finance Controller.
 
-**Status: Day 7 complete — Phases 0-3 and Phase 4's bounded agent core
-are built.** The full loop — load exception → agent investigates →
+**Status: Day 8 in progress — Phases 0-3 and Phase 4's bounded agent core
+are built; the multi-scenario regression scorer is now in place.** The full loop — load exception → agent investigates →
 policy decides → evidence page displays it — is wired end to end on a
 tiny dataset. Every piece except the live model call is tested against
 real Postgres or scripted fake models (no Anthropic API key available
@@ -23,7 +23,7 @@ npm run proof && npm run generate:demo && npm run generate:benchmark && npm run 
 cd apps/api && npm install
 cp .env.example .env       # see apps/api/README.md for Postgres + Anthropic setup
 npm run db:push
-npm test                    # 102 tests
+npm test                    # 110 tests
 npm run benchmark           # 100% precision/recall, unattended
 
 npm run ingest -- ../../datasets/agent-slice agent-slice-001
@@ -53,9 +53,9 @@ npm run investigate -- <exceptionId>  # printed by reconcile above — needs ANT
 
 ## What's next
 
-Day 8: exercise the agent contract across several exception classes,
-add regression scenarios (including an honest insufficient-evidence
-outcome), and refine only where those evaluations expose a weakness.
+Day 8: connect real exception fixtures to the regression scorer and run
+the agent contract across several classes, including an honest
+insufficient-evidence outcome. Refine only where those evaluations expose a weakness.
 `npm run benchmark` still needs
 to pass 100%/100% after — the agent is additive, never a replacement
 for the deterministic core underneath it. Full 14-day pace is in the

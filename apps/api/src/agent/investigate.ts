@@ -20,6 +20,7 @@ import { toolDefinitions, executeTool } from "./tools.js";
 import { SYSTEM_PROMPT } from "./system-prompt.js";
 import { runAgentLoopWithValidation, type ModelCaller } from "./loop.js";
 import { renderEvidencePage } from "./evidence-html.js";
+import type { InvestigationOutcome } from "./schema.js";
 
 const AGENT_MODEL = process.env.SETTLEGUARD_AGENT_MODEL ?? "claude-sonnet-5";
 const PROMPT_VERSION = "day7-v2";
@@ -29,6 +30,7 @@ export interface InvestigationSummary {
   outcomeStatus: "completed" | "ai_error";
   policyDecision: string;
   evidencePagePath: string;
+  outcome: InvestigationOutcome;
 }
 
 export async function investigateException(exceptionId: number, callModel: ModelCaller, outputHtmlPath: string): Promise<InvestigationSummary> {
@@ -92,5 +94,5 @@ Use the available tools to gather whatever further context you need, then respon
   const html = renderEvidencePage({ exception, steps, outcome, policyDecision });
   writeFileSync(outputHtmlPath, html, "utf-8");
 
-  return { investigationId, outcomeStatus: outcome.status, policyDecision, evidencePagePath: outputHtmlPath };
+  return { investigationId, outcomeStatus: outcome.status, policyDecision, evidencePagePath: outputHtmlPath, outcome };
 }
