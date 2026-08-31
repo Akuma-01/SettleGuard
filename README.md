@@ -23,7 +23,7 @@ npm run proof && npm run generate:demo && npm run generate:benchmark && npm run 
 cd apps/api && npm install
 cp .env.example .env       # see apps/api/README.md for Postgres + Anthropic setup
 npm run db:push
-npm test                    # 87 tests
+npm test                    # 92 tests
 npm run benchmark           # 100% precision/recall, unattended
 
 npm run ingest -- ../../datasets/agent-slice agent-slice-001
@@ -43,12 +43,13 @@ npm run investigate -- <exceptionId>  # printed by reconcile above — needs ANT
   scale (Day 5).
 - **Phase 4** (`apps/api/src/agent/`) — the agent vertical slice plus
   Day 7's tool layer so far: 10 input-validated evidence tools and 4
-  deterministic analysis tools,
+  deterministic analysis tools, plus 2 authorization-gated workflow
+  actions for review cases and adjustment proposals,
   a tool-calling loop with
   a step cap, Zod-validated structured output with one repair retry
   before an honest `AI_ERROR`, a minimal policy stub, and a plain
-  static HTML evidence page. Controlled-action tools remain for the next
-  Day 7-8 milestone.
+  static HTML evidence page. Direct linking, reclassification, and
+  resolution remain gated on Phase 5's real policy engine.
 
 ## What's next
 

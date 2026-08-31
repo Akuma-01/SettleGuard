@@ -1,7 +1,7 @@
 # @settleguard/api
 
-Phase 2's backend. Today (Day 3) it only ingests — no routes, no
-matching engine yet. That's Day 4.
+SettleGuard's API-side backend through Day 7: ingestion, deterministic
+reconciliation, benchmarking, and the bounded investigation agent.
 
 ## Setup
 
@@ -26,7 +26,7 @@ Then:
 cp .env.example .env       # defaults already match Option A/B above
 npm install
 npm run db:push            # creates all 15 tables from src/db/schema.ts
-npm test                   # 34 tests: normalization, validation, matching, exceptions
+npm test                   # 92 tests across ingestion, reconciliation, benchmark, and agent layers
 npm run ingest -- ../../datasets/demo demo-001
 npm run reconcile -- 1     # use whatever batch id the ingest above printed
 ```
@@ -89,7 +89,7 @@ API layer) — it's the fastest way to confirm new work hasn't quietly
 regressed the deterministic core underneath it. Exits non-zero on
 anything less than 100%/100%, so it's CI-friendly too.
 
-## The agent (Phase 4, Step 1 — vertical slice)
+## The agent (Phase 4 — Day 7 in progress)
 
 ```bash
 npm run investigate -- <exceptionId>
@@ -113,9 +113,10 @@ npm run investigate -- <exceptionId>   # printed above
 open investigation-<exceptionId>.html  # the "plain page" evidence display
 ```
 
-The agent has 5 read-only tools (`get_exception`, `get_settlement`,
-`get_adjustment`, `get_related_payments`, `get_related_refunds`) — no
-tool writes anything or moves money. It always ends by producing
+The model-facing catalog has 10 read-only evidence tools and 4
+deterministic analysis tools. It can fetch related financial records,
+reconstruct expected settlements and fees, compare bank credits, and
+score candidate matches without calculating money itself. It always ends by producing
 Zod-validated structured JSON (`rootCause`, `confidence`, `evidence`,
 `recommendedAction`, `requiresHumanApproval`, `explanation`); an
 invalid response gets one repair retry, then an honest `AI_ERROR`
@@ -123,8 +124,15 @@ rather than a fabricated result. A minimal policy stub opens a review
 case when the agent flags `requiresHumanApproval` — not Phase 5's real
 policy engine yet, just enough to complete the loop end to end.
 
+Two controlled workflow actions (`create_review_case` and
+`propose_adjustment`) live in a separate catalog. They require trusted
+authorization supplied outside model input, are idempotent on retry,
+and create audit records. They are not exposed to the normal agent loop.
+Direct linking, reclassification, and resolution wait for Phase 5's
+policy gates. No action moves money or mutates source financial records.
+
 Everything except the live model call is tested without needing an
-API key: the 5 tools against real Postgres, the Zod schema, and the
+API key: the tools against real Postgres, the Zod schema, and the
 entire tool-calling + repair-retry loop via scripted fake models
 (`npm test` covers all of it, plus a full integration test that runs
 `investigateException` end to end with a scripted response).
@@ -154,7 +162,9 @@ src/
 │   └── run-benchmark.ts            fresh ingest -> timed reconcile -> score, one shot
 ├── agent/
 │   ├── schema.ts              InvestigationResult Zod schema
-│   ├── tools.ts                 5 read-only evidence tools + dispatcher
+│   ├── tools.ts                 read-only evidence catalog + dispatcher
+│   ├── analysis-tools.ts          deterministic calculation/comparison tools
+│   ├── controlled-actions.ts        authorization-gated review/proposal actions
 │   ├── system-prompt.ts           golden rule, structured output requirement
 │   ├── loop.ts                      tool-calling loop + repair-retry (no SDK import — testable without a key)
 │   ├── client.ts                      real Anthropic SDK wrapper (only file that imports it)
@@ -170,5 +180,6 @@ src/
 `routes/`, `controllers/`, `policies/`, `workers/` from the repository
 layout aren't created yet — they show up as Phase 6's API layer,
 Phase 5's real policy engine, and Phase 8's queues actually need them.
-`agent/` today is a deliberately thin vertical slice (5 tools, not the
-full ~20-tool catalog) — Phase 4, Steps 2-5 build that out.
+`agent/` remains bounded by design: model-facing tools read and analyze;
+workflow writes require out-of-band authorization, and financial source
+records are never directly mutable by the model.
