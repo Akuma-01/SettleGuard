@@ -14,7 +14,7 @@ const baseResult: InvestigationResult = {
 
 function input(overrides: Partial<ResolutionPolicyInput> = {}, resultOverrides: Partial<InvestigationResult> = {}): ResolutionPolicyInput {
   const outcome: InvestigationOutcome = { status: "completed", result: { ...baseResult, ...resultOverrides } };
-  return { exceptionId: 7, amountAtRiskPaise: 50_000, outcome, deterministicEvidenceSupportsClaim: true, ...overrides };
+  return { exceptionId: 7, amountAtRiskPaise: 50_000, outcome, deterministicEvidenceSupportsClaim: true, actionExecutionReady: true, ...overrides };
 }
 
 describe("evaluateResolutionPolicy", () => {
@@ -44,6 +44,11 @@ describe("evaluateResolutionPolicy", () => {
     expect(decision.decision).toBe("human_review");
     expect(decision.reasons).toEqual(expect.arrayContaining(["DETERMINISTIC_SUPPORT_MISSING", "HIGH_RISK_FLAG"]));
     expect(decision.policySnapshot.highRiskFlags).toEqual(["HIGH_VALUE"]);
+  });
+
+  it("does not authorize a reversible action name without validated execution parameters", () => {
+    const decision = evaluateResolutionPolicy(input({ actionExecutionReady: false }));
+    expect(decision).toMatchObject({ decision: "human_review", reasons: expect.arrayContaining(["ACTION_EXECUTION_NOT_READY"]) });
   });
 
   it("never auto-resolves ambiguous or insufficient evidence", () => {
@@ -78,6 +83,7 @@ describe("evaluateResolutionPolicy", () => {
       amountAtRiskPaise: 50_000,
       confidence: 0.98,
       deterministicEvidenceSupportsClaim: true,
+      actionExecutionReady: true,
       highRiskFlags: [],
     });
   });

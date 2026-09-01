@@ -19,6 +19,7 @@ export type PolicyReasonCode =
   | "AMOUNT_OVER_LIMIT"
   | "HIGH_RISK_FLAG"
   | "DETERMINISTIC_SUPPORT_MISSING"
+  | "ACTION_EXECUTION_NOT_READY"
   | "ACTION_NOT_REVERSIBLE"
   | "FINANCIAL_ADJUSTMENT_REQUIRES_REVIEW"
   | "REVIEW_REQUESTED"
@@ -29,6 +30,7 @@ export interface ResolutionPolicyInput {
   amountAtRiskPaise: number;
   outcome: InvestigationOutcome;
   deterministicEvidenceSupportsClaim: boolean;
+  actionExecutionReady: boolean;
   highRiskFlags?: string[];
   config?: {
     minimumAutoResolveConfidence: number;
@@ -47,6 +49,7 @@ export interface ResolutionPolicyDecision {
     amountAtRiskPaise: number;
     confidence: number | null;
     deterministicEvidenceSupportsClaim: boolean;
+    actionExecutionReady: boolean;
     highRiskFlags: string[];
   };
 }
@@ -60,6 +63,7 @@ const reversibleActions = new Set<InvestigationResult["recommendedAction"]>([
 function validateInput(input: ResolutionPolicyInput) {
   if (!Number.isInteger(input.exceptionId) || input.exceptionId <= 0) throw new Error("exceptionId must be a positive integer");
   if (!Number.isInteger(input.amountAtRiskPaise) || input.amountAtRiskPaise < 0) throw new Error("amountAtRiskPaise must be a non-negative integer");
+  if (typeof input.actionExecutionReady !== "boolean") throw new Error("actionExecutionReady must be a boolean");
   const config = input.config ?? DEFAULT_POLICY_CONFIG;
   if (config.minimumAutoResolveConfidence < 0 || config.minimumAutoResolveConfidence > 1) throw new Error("minimumAutoResolveConfidence must be between 0 and 1");
   if (!Number.isInteger(config.maximumAutoResolveAmountPaise) || config.maximumAutoResolveAmountPaise < 0) throw new Error("maximumAutoResolveAmountPaise must be a non-negative integer");
@@ -78,6 +82,7 @@ export function evaluateResolutionPolicy(input: ResolutionPolicyInput): Resoluti
       amountAtRiskPaise: input.amountAtRiskPaise,
       confidence: result?.confidence ?? null,
       deterministicEvidenceSupportsClaim: input.deterministicEvidenceSupportsClaim,
+      actionExecutionReady: input.actionExecutionReady,
       highRiskFlags,
     },
   };
@@ -96,6 +101,7 @@ export function evaluateResolutionPolicy(input: ResolutionPolicyInput): Resoluti
   if (input.amountAtRiskPaise > config.maximumAutoResolveAmountPaise) reviewReasons.push("AMOUNT_OVER_LIMIT");
   if (highRiskFlags.length > 0) reviewReasons.push("HIGH_RISK_FLAG");
   if (!input.deterministicEvidenceSupportsClaim) reviewReasons.push("DETERMINISTIC_SUPPORT_MISSING");
+  if (!input.actionExecutionReady) reviewReasons.push("ACTION_EXECUTION_NOT_READY");
   if (!reversibleActions.has(result.recommendedAction)) reviewReasons.push("ACTION_NOT_REVERSIBLE");
   if (result.recommendedAction === "propose_adjustment") reviewReasons.push("FINANCIAL_ADJUSTMENT_REQUIRES_REVIEW");
   if (result.recommendedAction === "create_review_case") reviewReasons.push("REVIEW_REQUESTED");
