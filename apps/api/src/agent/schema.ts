@@ -16,10 +16,12 @@ export const investigationResultSchema = z.object({
   exceptionId: z.number().int().positive(),
   rootCause: z.enum([
     "duplicate_refund",
+    "missing_settlement",
     "missing_refund_link",
     "fee_mismatch",
     "unknown_adjustment",
     "missing_bank_credit",
+    "bank_credit_mismatch",
     "timing_difference",
     "ambiguous_match",
     "insufficient_evidence",

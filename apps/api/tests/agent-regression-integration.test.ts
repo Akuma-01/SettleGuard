@@ -28,11 +28,11 @@ afterAll(async () => {
 });
 
 const expectedByType: Record<string, { rootCause: string; recommendedAction: string }> = {
-  MISSING_SETTLEMENT: { rootCause: "timing_difference", recommendedAction: "rerun_reconciliation" },
+  MISSING_SETTLEMENT: { rootCause: "missing_settlement", recommendedAction: "rerun_reconciliation" },
   FEE_MISMATCH: { rootCause: "fee_mismatch", recommendedAction: "create_review_case" },
   UNKNOWN_ADJUSTMENT: { rootCause: "insufficient_evidence", recommendedAction: "no_action" },
   DUPLICATE_REFUND: { rootCause: "duplicate_refund", recommendedAction: "create_review_case" },
-  BANK_CREDIT_MISMATCH: { rootCause: "other", recommendedAction: "create_review_case" },
+  BANK_CREDIT_MISMATCH: { rootCause: "bank_credit_mismatch", recommendedAction: "create_review_case" },
   AMBIGUOUS_MATCH: { rootCause: "ambiguous_match", recommendedAction: "create_review_case" },
 };
 

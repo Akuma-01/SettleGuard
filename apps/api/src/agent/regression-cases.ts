@@ -20,7 +20,7 @@ export const REGRESSION_EXPECTATIONS: CaseExpectation[] = [
   {
     type: "MISSING_SETTLEMENT",
     name: "captured payment missing from settlement",
-    expectedRootCauses: ["timing_difference", "other", "insufficient_evidence"],
+    expectedRootCauses: ["missing_settlement"],
     expectedActions: ["rerun_reconciliation", "create_review_case", "no_action"],
   },
   {
@@ -45,7 +45,7 @@ export const REGRESSION_EXPECTATIONS: CaseExpectation[] = [
   {
     type: "BANK_CREDIT_MISMATCH",
     name: "bank credit amount mismatch",
-    expectedRootCauses: ["missing_bank_credit", "other"],
+    expectedRootCauses: ["bank_credit_mismatch"],
     expectedActions: ["create_review_case", "rerun_reconciliation"],
   },
   {

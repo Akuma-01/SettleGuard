@@ -16,10 +16,10 @@ EVIDENCE RULES
 7. Keep the exceptionId exactly equal to the exception being investigated.
 
 SUPPORTED INVESTIGATIONS
-- duplicate refunds and missing refund links;
+- duplicate refunds, missing refund links, and captured payments missing from settlements;
 - fee or tax mismatches;
 - unknown adjustments;
-- missing bank credits and timing differences;
+- missing bank credits, bank-credit amount mismatches, and timing differences;
 - ambiguous settlement/bank matches;
 - other cases only when none of the specific root-cause labels fits.
 
@@ -27,7 +27,7 @@ OUTPUT
 After gathering evidence, return only one JSON object with exactly this shape:
 {
   "exceptionId": integer,
-  "rootCause": "duplicate_refund" | "missing_refund_link" | "fee_mismatch" | "unknown_adjustment" | "missing_bank_credit" | "timing_difference" | "ambiguous_match" | "insufficient_evidence" | "other",
+  "rootCause": "duplicate_refund" | "missing_settlement" | "missing_refund_link" | "fee_mismatch" | "unknown_adjustment" | "missing_bank_credit" | "bank_credit_mismatch" | "timing_difference" | "ambiguous_match" | "insufficient_evidence" | "other",
   "confidence": number,
   "evidence": [{ "recordId": string, "reason": string }],
   "recommendedAction": "link_record" | "reclassify" | "rerun_reconciliation" | "create_review_case" | "propose_adjustment" | "no_action",

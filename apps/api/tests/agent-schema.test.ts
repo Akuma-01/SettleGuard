@@ -47,7 +47,7 @@ describe("investigationResultSchema", () => {
   });
 
   it("accepts every supported root-cause label", () => {
-    for (const rootCause of ["duplicate_refund", "missing_refund_link", "fee_mismatch", "unknown_adjustment", "missing_bank_credit", "timing_difference", "ambiguous_match", "insufficient_evidence", "other"] as const) {
+    for (const rootCause of ["duplicate_refund", "missing_settlement", "missing_refund_link", "fee_mismatch", "unknown_adjustment", "missing_bank_credit", "bank_credit_mismatch", "timing_difference", "ambiguous_match", "insufficient_evidence", "other"] as const) {
       expect(investigationResultSchema.safeParse({ ...validResult, rootCause }).success).toBe(true);
     }
   });
