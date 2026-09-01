@@ -3,6 +3,8 @@ import "dotenv/config";
 import path from "node:path";
 import { anthropicCaller, assertAnthropicConfigured } from "../agent/client.js";
 import { runDatabaseAgentRegression } from "../agent/regression-cases.js";
+import { createAgentRegressionReport, writeAgentRegressionReport } from "../agent/regression-report.js";
+import { AGENT_MODEL, PROMPT_VERSION } from "../agent/investigate.js";
 import { pool } from "../db/client.js";
 
 async function main() {
@@ -13,6 +15,13 @@ async function main() {
   assertAnthropicConfigured();
   const outputDirectory = path.resolve(process.argv[3] ?? `agent-regression-run-${runId}`);
   const summary = await runDatabaseAgentRegression(runId, anthropicCaller, outputDirectory);
+  const report = createAgentRegressionReport({
+    reconciliationRunId: runId,
+    model: AGENT_MODEL,
+    promptVersion: PROMPT_VERSION,
+    summary,
+  });
+  const reportPath = await writeAgentRegressionReport(outputDirectory, report);
 
   console.log("=".repeat(72));
   console.log(`SettleGuard Agent Regression — reconciliation run ${runId}`);
@@ -27,6 +36,7 @@ async function main() {
   console.log(`AI errors: ${summary.aiErrorCount}`);
   console.log(`Unsafe forced resolutions: ${summary.unsafeResolutionCount}`);
   console.log(`Evidence pages: ${outputDirectory}`);
+  console.log(`Machine-readable report: ${reportPath}`);
   console.log("=".repeat(72));
   if (summary.failed > 0) process.exitCode = 1;
 }

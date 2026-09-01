@@ -22,8 +22,8 @@ import { runAgentLoopWithValidation, type ModelCaller } from "./loop.js";
 import { renderEvidencePage } from "./evidence-html.js";
 import type { InvestigationOutcome } from "./schema.js";
 
-const AGENT_MODEL = process.env.SETTLEGUARD_AGENT_MODEL ?? "claude-sonnet-5";
-const PROMPT_VERSION = "day7-v2";
+export const AGENT_MODEL = process.env.SETTLEGUARD_AGENT_MODEL ?? "claude-sonnet-5";
+export const PROMPT_VERSION = "day7-v2";
 
 export interface InvestigationSummary {
   investigationId: number;
