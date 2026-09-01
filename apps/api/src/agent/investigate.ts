@@ -1,21 +1,11 @@
-/**
- * SettleGuard — Phase 4, Step 1: wires the whole vertical slice
- * together — load exception -> agent investigates -> policy decides
- * -> evidence page displays the result.
- *
- * The policy step here is deliberately minimal, NOT Phase 5's real
- * resolution policy engine (confidence/amount/reversibility
- * thresholds, auto-resolve gating). That's its own dedicated phase
- * on Day 9. Today's stub does exactly one thing: if the agent's
- * structured output says requiresHumanApproval (or the agent
- * produced an AI_ERROR), open a review case. Enough to complete the
- * loop end to end without pre-building Phase 5 two days early.
- */
+/** Load exception -> investigate -> apply deterministic policy -> render evidence. */
 
 import { eq } from "drizzle-orm";
 import { writeFileSync } from "node:fs";
 import { db } from "../db/client.js";
-import { agentEvents, exceptions, investigations, reviewCases } from "../db/schema.js";
+import { agentEvents, exceptions, investigations } from "../db/schema.js";
+import { decideResolution, type ResolutionDecisionBundle } from "../policy/decide-resolution.js";
+import { executeControlledAction } from "./controlled-actions.js";
 import { toolDefinitions, executeTool } from "./tools.js";
 import { SYSTEM_PROMPT } from "./system-prompt.js";
 import { runAgentLoopWithValidation, type ModelCaller } from "./loop.js";
@@ -31,6 +21,35 @@ export interface InvestigationSummary {
   policyDecision: string;
   evidencePagePath: string;
   outcome: InvestigationOutcome;
+  resolutionDecision: ResolutionDecisionBundle;
+}
+
+interface ReviewCaseActionResult {
+  reviewCase: { id: number };
+  created: boolean;
+}
+
+function isReviewCaseActionResult(value: unknown): value is ReviewCaseActionResult {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<ReviewCaseActionResult>;
+  return typeof candidate.created === "boolean"
+    && !!candidate.reviewCase
+    && typeof candidate.reviewCase.id === "number";
+}
+
+async function openPolicyReviewCase(exceptionId: number, proposedAction: string, reasons: string[]): Promise<ReviewCaseActionResult> {
+  const result = await executeControlledAction(
+    "create_review_case",
+    { exceptionId, proposedAction },
+    {
+      actorType: "system",
+      actorId: "resolution-policy",
+      allowedActions: new Set(["create_review_case"]),
+      reason: `Policy decision requires review: ${reasons.join(", ")}`,
+    },
+  );
+  if (!isReviewCaseActionResult(result)) throw new Error(`Failed to create policy review case for exception ${exceptionId}`);
+  return result;
 }
 
 export async function investigateException(exceptionId: number, callModel: ModelCaller, outputHtmlPath: string): Promise<InvestigationSummary> {
@@ -77,16 +96,16 @@ Use the available tools to gather whatever further context you need, then respon
   }));
   if (eventRows.length > 0) await db.insert(agentEvents).values(eventRows);
 
-  // Minimal policy stub — see file header.
+  const resolutionDecision = decideResolution({ exception, outcome });
+  const { policy } = resolutionDecision;
   let policyDecision: string;
-  if (outcome.status === "ai_error") {
-    policyDecision = `AI_ERROR — no structured result was produced (${outcome.reason}). Opened a review case for manual investigation.`;
-    await db.insert(reviewCases).values({ exceptionId, status: "pending", proposedAction: "manual_investigation_required" });
-  } else if (outcome.result.requiresHumanApproval) {
-    const [caseRow] = await db.insert(reviewCases).values({ exceptionId, status: "pending", proposedAction: outcome.result.recommendedAction }).returning();
-    policyDecision = `Review case #${caseRow!.id} created — requires human approval (agent recommended "${outcome.result.recommendedAction}" at ${(outcome.result.confidence * 100).toFixed(0)}% confidence).`;
+  if (policy.decision === "auto_resolve") {
+    policyDecision = `Eligible for auto-resolution (${policy.reasons.join(", ")}). No action was executed because the controlled action executor is not connected yet.`;
   } else {
-    policyDecision = `No review case created — agent recommended "${outcome.result.recommendedAction}" and did not flag it for human approval. (Note: Day 6's stub does not yet enforce Phase 5's auto-resolve gates; treat this path as informational only until Phase 5 exists.)`;
+    const proposedAction = policy.recommendedAction ?? "manual_investigation_required";
+    const review = await openPolicyReviewCase(exceptionId, proposedAction, policy.reasons);
+    const disposition = policy.decision === "unresolved" ? "Unresolved" : "Human review required";
+    policyDecision = `${disposition} (${policy.reasons.join(", ")}). Review case #${review.reviewCase.id} ${review.created ? "created" : "reused"}.`;
   }
 
   await db
@@ -105,5 +124,5 @@ Use the available tools to gather whatever further context you need, then respon
   const html = renderEvidencePage({ exception, steps, outcome, policyDecision });
   writeFileSync(outputHtmlPath, html, "utf-8");
 
-  return { investigationId, outcomeStatus: outcome.status, policyDecision, evidencePagePath: outputHtmlPath, outcome };
+  return { investigationId, outcomeStatus: outcome.status, policyDecision, evidencePagePath: outputHtmlPath, outcome, resolutionDecision };
 }

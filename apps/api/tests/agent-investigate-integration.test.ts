@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import path from "node:path";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "../src/db/client.js";
 import { batches, exceptions, investigations, reviewCases } from "../src/db/schema.js";
@@ -57,10 +57,14 @@ describe("investigateException — full vertical slice, scripted model", () => {
     expect(invRow!.recommendedAction).toBe("create_review_case");
     expect(invRow!.requiresHumanApproval).toBe(true);
 
-    // 3. Policy correctly opened a review case, since requiresHumanApproval was true
+    // 3. Deterministic policy opened a review case and exposed its complete decision.
     const cases = await db.select().from(reviewCases).where(eq(reviewCases.exceptionId, exceptionId));
     expect(cases.length).toBeGreaterThan(0);
-    expect(summary.policyDecision).toMatch(/Review case #\d+ created/);
+    expect(summary.resolutionDecision.policy).toMatchObject({
+      decision: "human_review",
+      reasons: expect.arrayContaining(["MODEL_REQUIRES_APPROVAL", "LOW_CONFIDENCE", "REVIEW_REQUESTED"]),
+    });
+    expect(summary.policyDecision).toMatch(/Review case #\d+ (created|reused)/);
 
     // 4. Evidence page was actually written to disk and contains the real content
     expect(existsSync(outputPath)).toBe(true);
@@ -68,6 +72,32 @@ describe("investigateException — full vertical slice, scripted model", () => {
     expect(html).toContain("get_adjustment");
     expect(html).toContain("create_review_case");
     expect(html).toContain("Review case");
+  });
+
+  it("does not trust a model's false approval flag when deterministic gates require review", async () => {
+    const scriptedCaller: ModelCaller = async () => textResponse(
+      JSON.stringify({
+        exceptionId,
+        rootCause: "unknown_adjustment",
+        confidence: 0.5,
+        evidence: [{ recordId: `adjustment:${adjustmentId}`, reason: "The adjustment has no verified source reference." }],
+        recommendedAction: "rerun_reconciliation",
+        requiresHumanApproval: false,
+        explanation: "Rerun reconciliation after reviewing the unexplained adjustment.",
+      }),
+    );
+
+    const summary = await investigateException(exceptionId, scriptedCaller, outputPath);
+
+    expect(summary.resolutionDecision.policy).toMatchObject({
+      decision: "human_review",
+      reasons: expect.arrayContaining(["LOW_CONFIDENCE"]),
+    });
+    const cases = await db.select().from(reviewCases).where(and(
+      eq(reviewCases.exceptionId, exceptionId),
+      eq(reviewCases.proposedAction, "rerun_reconciliation"),
+    ));
+    expect(cases.length).toBeGreaterThan(0);
   });
 
   it("cleanup", () => {
