@@ -53,7 +53,18 @@ Deterministic evidence already gathered: ${JSON.stringify(exception.deterministi
 
 Use the available tools to gather whatever further context you need, then respond with the required structured JSON.`;
 
-  const { outcome, steps } = await runAgentLoopWithValidation(SYSTEM_PROMPT, initialMessage, toolDefinitions, callModel, executeTool, exceptionId);
+  const trustedEvidenceRecordIds = [
+    `exception:${exception.id}`,
+    ...(exception.primaryRecordType && exception.primaryRecordId ? [`${exception.primaryRecordType}:${exception.primaryRecordId}`] : []),
+  ];
+  const { outcome, steps } = await runAgentLoopWithValidation(
+    SYSTEM_PROMPT,
+    initialMessage,
+    toolDefinitions,
+    callModel,
+    executeTool,
+    { expectedExceptionId: exceptionId, trustedEvidenceRecordIds },
+  );
 
   // Persist the trace, in order.
   const eventRows = steps.map((step, i) => ({

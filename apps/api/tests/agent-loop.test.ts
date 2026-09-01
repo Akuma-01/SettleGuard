@@ -202,10 +202,30 @@ describe("runAgentLoopWithValidation — structured output + repair retry", () =
       .mockResolvedValueOnce(textResponse(validResult({ exceptionId: 99 })))
       .mockResolvedValueOnce(textResponse(validResult({ exceptionId: 99 })));
 
-    const { outcome } = await runAgentLoopWithValidation("system", "investigate", dummyTools, caller, vi.fn(), 42);
+    const { outcome } = await runAgentLoopWithValidation("system", "investigate", dummyTools, caller, vi.fn(), {
+      expectedExceptionId: 42,
+      trustedEvidenceRecordIds: ["adjustment:100"],
+    });
 
     expect(outcome.status).toBe("ai_error");
     if (outcome.status === "ai_error") expect(outcome.reason).toMatch(/exceptionId must be 42/);
+  });
+
+  it("repairs an evidence citation that was never observed in tool output", async () => {
+    const caller: ModelCaller = vi
+      .fn()
+      .mockResolvedValueOnce(toolUseResponse("get_adjustment", { adjustmentId: 100 }))
+      .mockResolvedValueOnce(textResponse(validResult({ evidence: [{ recordId: "adjustment:999", reason: "invented" }] })))
+      .mockResolvedValueOnce(textResponse(validResult()));
+    const executeTool = vi.fn().mockResolvedValue({ id: 100, sourceReference: null });
+
+    const { outcome } = await runAgentLoopWithValidation("system", "investigate", dummyTools, caller, executeTool, {
+      expectedExceptionId: 42,
+      trustedEvidenceRecordIds: ["exception:42"],
+    });
+
+    expect(outcome.status).toBe("completed");
+    if (outcome.status === "completed") expect(outcome.result.evidence[0]!.recordId).toBe("adjustment:100");
   });
 
   it("returns AI_ERROR when the step cap is hit, without attempting to validate a nonexistent final answer", async () => {

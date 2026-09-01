@@ -26,7 +26,7 @@ Then:
 cp .env.example .env       # defaults already match Option A/B above
 npm install
 npm run db:push            # creates all 15 tables from src/db/schema.ts
-npm test                   # 113 tests across ingestion, reconciliation, benchmark, and agent layers
+npm test                   # 117 tests across ingestion, reconciliation, benchmark, and agent layers
 npm run ingest -- ../../datasets/demo demo-001
 npm run reconcile -- 1     # use whatever batch id the ingest above printed
 ```
@@ -128,6 +128,9 @@ The loop caps actual tool executions at eight, including parallel tool
 requests. Oversized batches are not partially executed; malformed calls,
 provider failures, and thrown tool errors become explicit controlled
 outcomes rather than crashing or leaving an investigation ambiguous.
+Every cited internal record ID must also appear in trusted exception
+context or verified tool output. Invented citations receive one repair
+attempt and then become an explicit `AI_ERROR` if still ungrounded.
 
 Two controlled workflow actions (`create_review_case` and
 `propose_adjustment`) live in a separate catalog. They require trusted
@@ -187,6 +190,7 @@ src/
 │   ├── schema.ts              InvestigationResult Zod schema
 │   ├── tools.ts                 read-only evidence catalog + dispatcher
 │   ├── analysis-tools.ts          deterministic calculation/comparison tools
+│   ├── evidence-grounding.ts        verifies cited IDs came from trusted observations
 │   ├── controlled-actions.ts        authorization-gated review/proposal actions
 │   ├── regression.ts                  multi-scenario agent evaluation and scoring
 │   ├── regression-cases.ts              six real exception fixtures + live runner

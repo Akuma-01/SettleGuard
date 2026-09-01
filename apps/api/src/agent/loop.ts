@@ -13,6 +13,7 @@
 
 import { investigationResultSchema, type InvestigationOutcome } from "./schema.js";
 import type { ToolDefinition } from "./tools.js";
+import { extractObservedRecordIds } from "./evidence-grounding.js";
 
 export interface ContentBlock {
   type: "text" | "tool_use";
@@ -40,6 +41,11 @@ export interface ModelResponse {
 
 export type ModelCaller = (params: { system: string; messages: ModelMessage[]; tools: ToolDefinition[] }) => Promise<ModelResponse>;
 export type ToolExecutor = (name: string, input: Record<string, unknown>) => Promise<unknown>;
+
+export interface InvestigationValidationContext {
+  expectedExceptionId: number;
+  trustedEvidenceRecordIds: string[];
+}
 
 export type AgentStep =
   | { type: "tool_call"; toolName: string; toolInput: Record<string, unknown> }
@@ -143,7 +149,7 @@ export async function runAgentLoopWithValidation(
   tools: ToolDefinition[],
   callModel: ModelCaller,
   executeTool: ToolExecutor,
-  expectedExceptionId?: number,
+  validationContext?: InvestigationValidationContext,
 ): Promise<{ outcome: InvestigationOutcome; steps: AgentStep[] }> {
   const loopResult = await runAgentLoop(system, initialUserMessage, tools, callModel, executeTool);
 
@@ -160,7 +166,9 @@ export async function runAgentLoopWithValidation(
     };
   }
 
-  const attempt = validateFinalText(loopResult.finalText, expectedExceptionId);
+  const observedRecordIds = extractObservedRecordIds(loopResult.steps);
+  for (const recordId of validationContext?.trustedEvidenceRecordIds ?? []) observedRecordIds.add(recordId);
+  const attempt = validateFinalText(loopResult.finalText, validationContext, observedRecordIds);
   if (attempt.status === "completed") return { outcome: attempt, steps: loopResult.steps };
 
   // One repair retry, continuing the same conversation.
@@ -183,18 +191,28 @@ export async function runAgentLoopWithValidation(
   const repairText = repairResponse.content.find((b) => b.type === "text")?.text ?? "";
   if (repairText) loopResult.steps.push({ type: "final_text", text: repairText });
 
-  const repairAttempt = validateFinalText(repairText, expectedExceptionId);
+  const repairAttempt = validateFinalText(repairText, validationContext, observedRecordIds);
   return { outcome: repairAttempt, steps: loopResult.steps };
 }
 
-function validateFinalText(text: string | null, expectedExceptionId?: number): InvestigationOutcome {
+function validateFinalText(
+  text: string | null,
+  validationContext?: InvestigationValidationContext,
+  observedRecordIds = new Set<string>(),
+): InvestigationOutcome {
   if (!text) return { status: "ai_error", reason: "model produced no final text response", rawResponse: "" };
   const parsed = tryParse(text);
   if (!parsed.success) return { status: "ai_error", reason: `not valid JSON: ${parsed.error}`, rawResponse: text };
   const validated = investigationResultSchema.safeParse(parsed.data);
   if (!validated.success) return { status: "ai_error", reason: `schema validation failed: ${validated.error.message}`, rawResponse: text };
-  if (expectedExceptionId !== undefined && validated.data.exceptionId !== expectedExceptionId) {
-    return { status: "ai_error", reason: `schema validation failed: exceptionId must be ${expectedExceptionId}`, rawResponse: text };
+  if (validationContext && validated.data.exceptionId !== validationContext.expectedExceptionId) {
+    return { status: "ai_error", reason: `schema validation failed: exceptionId must be ${validationContext.expectedExceptionId}`, rawResponse: text };
+  }
+  if (validationContext) {
+    const ungrounded = validated.data.evidence.map((item) => item.recordId).filter((recordId) => !observedRecordIds.has(recordId));
+    if (ungrounded.length > 0) {
+      return { status: "ai_error", reason: `evidence grounding failed: unobserved record IDs ${ungrounded.join(", ")}`, rawResponse: text };
+    }
   }
   return { status: "completed", result: validated.data };
 }
