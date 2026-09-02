@@ -1,7 +1,7 @@
 /** Human-authorized resolution action for an ambiguous bank-to-settlement link. */
 import { and, eq } from "drizzle-orm";
 import { db } from "../db/client.js";
-import { auditLogs, bankTransactions, exceptions, matches, reconciliationRuns, settlements } from "../db/schema.js";
+import { auditLogs, bankTransactions, exceptions, matches, reconciliationRuns, reviewCases, settlements } from "../db/schema.js";
 import type { ExecutableActionPlan } from "./action-plan.js";
 
 type LinkRecordPlan = Extract<ExecutableActionPlan, { action: "link_record" }>;
@@ -10,6 +10,8 @@ export interface LinkRecordAuthorization {
   actorType: "human";
   actorId: string;
   reason: string;
+  reviewCaseId?: number;
+  reviewerNote?: string;
 }
 
 export type LinkRecordActionResult =
@@ -34,6 +36,15 @@ export async function executeLinkRecordAction(
     db.select().from(settlements).where(eq(settlements.id, plan.targetId)),
   ]);
   if (!exception) throw new Error(`No exception with id ${plan.exceptionId}`);
+  const [reviewCase] = authorization.reviewCaseId
+    ? await db.select().from(reviewCases).where(eq(reviewCases.id, authorization.reviewCaseId))
+    : [undefined];
+  if (authorization.reviewCaseId && (!reviewCase || reviewCase.exceptionId !== exception.id || reviewCase.status !== "pending")) {
+    throw new Error("Link approval requires a pending review case for this exception");
+  }
+  if (reviewCase && (!authorization.reviewerNote || !authorization.reviewerNote.trim())) {
+    throw new Error("Link approval requires a reviewer note");
+  }
   const [trustedRun] = await db.select().from(reconciliationRuns).where(eq(reconciliationRuns.id, exception.runId));
   if (!trustedRun) throw new Error(`No reconciliation run with id ${exception.runId}`);
   if (exception.type !== "AMBIGUOUS_MATCH") throw new Error("link_record requires an AMBIGUOUS_MATCH exception");
@@ -82,6 +93,16 @@ export async function executeLinkRecordAction(
       .returning({ id: exceptions.id });
     if (updated.length !== 1) throw new Error(`Exception ${exception.id} changed while link resolution was executing`);
 
+    if (reviewCase) {
+      const closed = await tx.update(reviewCases).set({
+        status: "completed",
+        reviewerDecision: "approve",
+        reviewerNote: authorization.reviewerNote!.trim(),
+        reviewedAt: new Date(),
+      }).where(and(eq(reviewCases.id, reviewCase.id), eq(reviewCases.status, "pending"))).returning({ id: reviewCases.id });
+      if (closed.length !== 1) throw new Error(`Review case ${reviewCase.id} changed while link resolution was executing`);
+    }
+
     await tx.insert(auditLogs).values({
       actorType: authorization.actorType,
       actorId: authorization.actorId,
@@ -90,8 +111,20 @@ export async function executeLinkRecordAction(
       entityId: exception.id,
       beforeJson: { status: exception.status, resolvedAt: exception.resolvedAt },
       afterJson: { status: "HUMAN_RESOLVED", matchId },
-      metadataJson: { authorizationReason: authorization.reason, plan },
+      metadataJson: { authorizationReason: authorization.reason, reviewCaseId: reviewCase?.id ?? null, plan },
     });
+    if (reviewCase) {
+      await tx.insert(auditLogs).values({
+        actorType: "human",
+        actorId: authorization.actorId,
+        action: "review_approve",
+        entityType: "review_case",
+        entityId: reviewCase.id,
+        beforeJson: { status: reviewCase.status },
+        afterJson: { status: "completed", reviewerDecision: "approve", exceptionStatus: "HUMAN_RESOLVED", matchId },
+        metadataJson: { exceptionId: exception.id, note: authorization.reviewerNote },
+      });
+    }
     return { status: "linked", matchId, created: !exact, exceptionResolved: true };
   });
 }
