@@ -195,7 +195,7 @@ Use the available tools to gather whatever further context you need, then respon
     }
   });
 
-  const html = renderEvidencePage({ exception, steps, outcome, policyDecision });
+  const html = renderEvidencePage({ exception, steps, outcome, policyDecision, resolutionDecision, resolutionExecution });
   writeFileSync(outputHtmlPath, html, "utf-8");
 
   return { investigationId, outcomeStatus: outcome.status, policyDecision, evidencePagePath: outputHtmlPath, outcome, resolutionDecision, resolutionExecution };

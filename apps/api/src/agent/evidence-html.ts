@@ -10,6 +10,7 @@
 import type { AgentStep } from "./loop.js";
 import type { InvestigationOutcome } from "./schema.js";
 import type { ExceptionRecord } from "../db/schema.js";
+import type { ResolutionDecisionBundle } from "../policy/decide-resolution.js";
 
 function esc(s: unknown): string {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -36,10 +37,12 @@ export interface EvidencePageData {
   steps: AgentStep[];
   outcome: InvestigationOutcome;
   policyDecision: string; // e.g. "Review case #12 created — requires human approval."
+  resolutionDecision?: ResolutionDecisionBundle;
+  resolutionExecution?: unknown;
 }
 
 export function renderEvidencePage(data: EvidencePageData): string {
-  const { exception, steps, outcome, policyDecision } = data;
+  const { exception, steps, outcome, policyDecision, resolutionDecision, resolutionExecution } = data;
 
   const resultHtml =
     outcome.status === "completed"
@@ -62,6 +65,21 @@ export function renderEvidencePage(data: EvidencePageData): string {
         ${outcome.rawResponse ? `<pre>${esc(outcome.rawResponse)}</pre>` : ""}
         <p class="note">The agent could not produce a validated result, so none is shown here. An AI_ERROR is reported explicitly, never silently replaced with a guess.</p>
       </div>`;
+
+  const resolutionHtml = resolutionDecision ? `
+    <div class="card policy-details">
+      <h2>Resolution controls</h2>
+      <dl>
+        <dt>Disposition</dt><dd>${esc(resolutionDecision.policy.decision)}</dd>
+        <dt>Policy reasons</dt><dd>${resolutionDecision.policy.reasons.map(esc).join(", ")}</dd>
+        <dt>Confidence threshold</dt><dd>${(resolutionDecision.policy.policySnapshot.minimumAutoResolveConfidence * 100).toFixed(0)}%</dd>
+        <dt>Amount threshold</dt><dd>${inr(resolutionDecision.policy.policySnapshot.maximumAutoResolveAmountPaise)}</dd>
+        <dt>High-risk flags</dt><dd>${resolutionDecision.policy.policySnapshot.highRiskFlags.length > 0 ? resolutionDecision.policy.policySnapshot.highRiskFlags.map(esc).join(", ") : "None"}</dd>
+        <dt>Deterministic support</dt><dd>${resolutionDecision.support ? `${resolutionDecision.support.supported ? "Verified" : "Not verified"} — ${esc(resolutionDecision.support.reason)}` : "Unavailable"}</dd>
+        <dt>Action plan</dt><dd>${resolutionDecision.actionPlan ? `${resolutionDecision.actionPlan.ready ? "Ready" : "Not ready"} — ${esc(resolutionDecision.actionPlan.reason)}` : "Unavailable"}</dd>
+        <dt>Execution</dt><dd>${resolutionExecution === null || resolutionExecution === undefined ? "Not executed" : esc(JSON.stringify(resolutionExecution))}</dd>
+      </dl>
+    </div>` : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -112,6 +130,7 @@ export function renderEvidencePage(data: EvidencePageData): string {
   <div class="policy">
     <strong>Policy decision:</strong> ${esc(policyDecision)}
   </div>
+  ${resolutionHtml}
 </body>
 </html>`;
 }

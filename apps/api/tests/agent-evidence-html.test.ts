@@ -41,6 +41,26 @@ describe("renderEvidencePage — completed outcome", () => {
       },
     },
     policyDecision: "Review case #7 created.",
+    resolutionDecision: {
+      support: { supported: true, reason: "SUPPORTED_UNKNOWN_ADJUSTMENT", verifiedRecordIds: ["adjustment:100"] },
+      actionPlan: { ready: false, reason: "ACTION_REQUIRES_HUMAN_WORKFLOW", plan: null },
+      policy: {
+        exceptionId: 463,
+        decision: "human_review",
+        recommendedAction: "create_review_case",
+        reasons: ["MODEL_REQUIRES_APPROVAL", "LOW_CONFIDENCE", "HIGH_RISK_FLAG", "ACTION_EXECUTION_NOT_READY", "ACTION_NOT_REVERSIBLE", "REVIEW_REQUESTED"],
+        policySnapshot: {
+          minimumAutoResolveConfidence: 0.95,
+          maximumAutoResolveAmountPaise: 100_000,
+          amountAtRiskPaise: 286_187,
+          confidence: 0.55,
+          deterministicEvidenceSupportsClaim: true,
+          actionExecutionReady: false,
+          highRiskFlags: ["HIGH_SEVERITY"],
+        },
+      },
+    },
+    resolutionExecution: null,
   });
 
   it("includes the exception id, type, and amount", () => {
@@ -63,6 +83,13 @@ describe("renderEvidencePage — completed outcome", () => {
 
   it("includes the policy decision", () => {
     expect(html).toContain("Review case #7 created.");
+    expect(html).toContain("Resolution controls");
+    expect(html).toContain("human_review");
+    expect(html).toContain("MODEL_REQUIRES_APPROVAL");
+    expect(html).toContain("SUPPORTED_UNKNOWN_ADJUSTMENT");
+    expect(html).toContain("ACTION_REQUIRES_HUMAN_WORKFLOW");
+    expect(html).toContain("HIGH_SEVERITY");
+    expect(html).toContain("Not executed");
   });
 
   it("is well-formed enough to be a complete HTML document", () => {
