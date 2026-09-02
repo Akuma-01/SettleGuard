@@ -1,7 +1,8 @@
-import { count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import { db } from "../../db/client.js";
 import { adjustments, bankTransactions, batches, merchants, payments, reconciliationRuns, refunds, settlements } from "../../db/schema.js";
+import { runReconciliation } from "../../reconciliation/run.js";
 import type { ApiErrorBody } from "../app.js";
 
 function parseId(value: string): number | null {
@@ -16,6 +17,29 @@ async function tableCount(table: typeof payments | typeof refunds | typeof settl
 }
 
 export async function registerBatchRoutes(app: FastifyInstance): Promise<void> {
+  app.post<{ Params: { id: string } }>("/api/batches/:id/reconcile", async (request, reply) => {
+    const batchId = parseId(request.params.id);
+    if (batchId === null) {
+      return reply.code(400).send({ error: { code: "INVALID_BATCH_ID", message: "Batch id must be a positive integer" } } satisfies ApiErrorBody);
+    }
+    const [batch] = await db.select({ id: batches.id }).from(batches).where(eq(batches.id, batchId));
+    if (!batch) {
+      return reply.code(404).send({ error: { code: "BATCH_NOT_FOUND", message: `No batch with id ${batchId}` } } satisfies ApiErrorBody);
+    }
+    const [processing] = await db.select({ id: reconciliationRuns.id }).from(reconciliationRuns).where(and(
+      eq(reconciliationRuns.batchId, batchId),
+      eq(reconciliationRuns.status, "processing"),
+    ));
+    if (processing) {
+      return reply.code(409).send({
+        error: { code: "RECONCILIATION_IN_PROGRESS", message: `Reconciliation run ${processing.id} is already processing this batch` },
+      } satisfies ApiErrorBody);
+    }
+
+    const summary = await runReconciliation(batchId);
+    return reply.code(201).send({ run: summary });
+  });
+
   app.get<{ Params: { id: string } }>("/api/batches/:id", async (request, reply) => {
     const batchId = parseId(request.params.id);
     if (batchId === null) {
