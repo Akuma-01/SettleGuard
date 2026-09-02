@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
+import { registerBatchRoutes } from "./routes/batches.js";
 
 export interface ApiErrorBody {
   error: {
@@ -15,6 +16,7 @@ export function buildApp(options: FastifyServerOptions = { logger: false }): Fas
     service: "settleguard-api",
     version: "0.1.0",
   }));
+  void app.register(registerBatchRoutes);
 
   app.setNotFoundHandler(async (_request, reply) => {
     return reply.code(404).send({
