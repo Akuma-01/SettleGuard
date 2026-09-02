@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { writeFileSync } from "node:fs";
 import { db } from "../db/client.js";
-import { agentEvents, exceptions, investigations } from "../db/schema.js";
+import { agentEvents, auditLogs, exceptions, investigations } from "../db/schema.js";
 import { decideResolution, type ResolutionDecisionBundle } from "../policy/decide-resolution.js";
 import { executeControlledAction } from "./controlled-actions.js";
 import { toolDefinitions, executeTool } from "./tools.js";
@@ -108,18 +108,34 @@ Use the available tools to gather whatever further context you need, then respon
     policyDecision = `${disposition} (${policy.reasons.join(", ")}). Review case #${review.reviewCase.id} ${review.created ? "created" : "reused"}.`;
   }
 
-  await db
-    .update(investigations)
-    .set({
-      status: outcome.status === "completed" ? "completed" : "failed",
-      rootCause: outcome.status === "completed" ? outcome.result.rootCause : null,
-      confidence: outcome.status === "completed" ? outcome.result.confidence : null,
-      recommendedAction: outcome.status === "completed" ? outcome.result.recommendedAction : null,
-      requiresHumanApproval: outcome.status === "completed" ? outcome.result.requiresHumanApproval : true,
-      structuredOutputJson: outcome.status === "completed" ? outcome.result : { error: outcome.reason },
-      completedAt: new Date(),
-    })
-    .where(eq(investigations.id, investigationId));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(investigations)
+      .set({
+        status: outcome.status === "completed" ? "completed" : "failed",
+        rootCause: outcome.status === "completed" ? outcome.result.rootCause : null,
+        confidence: outcome.status === "completed" ? outcome.result.confidence : null,
+        recommendedAction: outcome.status === "completed" ? outcome.result.recommendedAction : null,
+        requiresHumanApproval: outcome.status === "completed" ? outcome.result.requiresHumanApproval : true,
+        structuredOutputJson: outcome.status === "completed" ? outcome.result : { error: outcome.reason },
+        completedAt: new Date(),
+      })
+      .where(eq(investigations.id, investigationId));
+
+    await tx.insert(auditLogs).values({
+      actorType: "system",
+      actorId: "resolution-policy",
+      action: "resolution_policy_decision",
+      entityType: "investigation",
+      entityId: investigationId,
+      afterJson: resolutionDecision.policy,
+      metadataJson: {
+        exceptionId,
+        deterministicSupport: resolutionDecision.support,
+        actionPlan: resolutionDecision.actionPlan,
+      },
+    });
+  });
 
   const html = renderEvidencePage({ exception, steps, outcome, policyDecision });
   writeFileSync(outputHtmlPath, html, "utf-8");

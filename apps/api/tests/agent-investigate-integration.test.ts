@@ -3,7 +3,7 @@ import path from "node:path";
 import { and, eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "../src/db/client.js";
-import { batches, exceptions, investigations, reviewCases } from "../src/db/schema.js";
+import { auditLogs, batches, exceptions, investigations, reviewCases } from "../src/db/schema.js";
 import { investigateException } from "../src/agent/investigate.js";
 import type { ModelCaller, ModelResponse } from "../src/agent/loop.js";
 
@@ -65,6 +65,23 @@ describe("investigateException — full vertical slice, scripted model", () => {
       reasons: expect.arrayContaining(["MODEL_REQUIRES_APPROVAL", "LOW_CONFIDENCE", "REVIEW_REQUESTED"]),
     });
     expect(summary.policyDecision).toMatch(/Review case #\d+ (created|reused)/);
+
+    const [policyAudit] = await db.select().from(auditLogs).where(and(
+      eq(auditLogs.entityType, "investigation"),
+      eq(auditLogs.entityId, summary.investigationId),
+      eq(auditLogs.action, "resolution_policy_decision"),
+    ));
+    expect(policyAudit).toBeDefined();
+    expect(policyAudit!.actorId).toBe("resolution-policy");
+    expect(policyAudit!.afterJson).toMatchObject({
+      decision: "human_review",
+      reasons: expect.arrayContaining(["MODEL_REQUIRES_APPROVAL"]),
+    });
+    expect(policyAudit!.metadataJson).toMatchObject({
+      exceptionId,
+      deterministicSupport: { supported: true },
+      actionPlan: { ready: false, reason: "ACTION_REQUIRES_HUMAN_WORKFLOW" },
+    });
 
     // 4. Evidence page was actually written to disk and contains the real content
     expect(existsSync(outputPath)).toBe(true);
