@@ -4,12 +4,7 @@ import { db } from "../../db/client.js";
 import { adjustments, bankTransactions, batches, merchants, payments, reconciliationRuns, refunds, settlements } from "../../db/schema.js";
 import { runReconciliation } from "../../reconciliation/run.js";
 import type { ApiErrorBody } from "../app.js";
-
-function parseId(value: string): number | null {
-  if (!/^\d+$/.test(value)) return null;
-  const id = Number(value);
-  return Number.isSafeInteger(id) && id > 0 ? id : null;
-}
+import { parsePositiveId } from "../params.js";
 
 async function tableCount(table: typeof payments | typeof refunds | typeof settlements | typeof bankTransactions | typeof adjustments, batchId: number) {
   const [row] = await db.select({ value: count() }).from(table).where(eq(table.batchId, batchId));
@@ -18,7 +13,7 @@ async function tableCount(table: typeof payments | typeof refunds | typeof settl
 
 export async function registerBatchRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Params: { id: string } }>("/api/batches/:id/reconcile", async (request, reply) => {
-    const batchId = parseId(request.params.id);
+    const batchId = parsePositiveId(request.params.id);
     if (batchId === null) {
       return reply.code(400).send({ error: { code: "INVALID_BATCH_ID", message: "Batch id must be a positive integer" } } satisfies ApiErrorBody);
     }
@@ -41,7 +36,7 @@ export async function registerBatchRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get<{ Params: { id: string } }>("/api/batches/:id", async (request, reply) => {
-    const batchId = parseId(request.params.id);
+    const batchId = parsePositiveId(request.params.id);
     if (batchId === null) {
       return reply.code(400).send({ error: { code: "INVALID_BATCH_ID", message: "Batch id must be a positive integer" } } satisfies ApiErrorBody);
     }

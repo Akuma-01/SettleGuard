@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
 import { registerBatchRoutes } from "./routes/batches.js";
+import { registerRunRoutes } from "./routes/runs.js";
 
 export interface ApiErrorBody {
   error: {
@@ -17,6 +18,7 @@ export function buildApp(options: FastifyServerOptions = { logger: false }): Fas
     version: "0.1.0",
   }));
   void app.register(registerBatchRoutes);
+  void app.register(registerRunRoutes);
 
   app.setNotFoundHandler(async (_request, reply) => {
     return reply.code(404).send({
