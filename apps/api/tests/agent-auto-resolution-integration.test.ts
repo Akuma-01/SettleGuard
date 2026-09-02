@@ -8,6 +8,9 @@ import { db } from "../src/db/client.js";
 import { batches, exceptions, merchants, reconciliationRuns } from "../src/db/schema.js";
 
 let exceptionId: number;
+let reviewExceptionId: number;
+let unresolvedExceptionId: number;
+let originalRunId: number;
 
 beforeAll(async () => {
   let [merchant] = await db.select().from(merchants).limit(1);
@@ -19,6 +22,7 @@ beforeAll(async () => {
     recordCount: 0,
   }).returning();
   const [run] = await db.insert(reconciliationRuns).values({ batchId: batch!.id, status: "completed" }).returning();
+  originalRunId = run!.id;
   const [exception] = await db.insert(exceptions).values({
     runId: run!.id,
     type: "FEE_MISMATCH",
@@ -37,6 +41,33 @@ beforeAll(async () => {
     },
   }).returning();
   exceptionId = exception!.id;
+
+  const reviewExceptions = await db.insert(exceptions).values([
+    {
+      runId: originalRunId,
+      type: "FEE_MISMATCH",
+      severity: "medium",
+      status: "OPEN",
+      amountAtRiskPaise: 500,
+      primaryRecordType: "settlement",
+      primaryRecordId: 999_997,
+      summary: "Synthetic low-confidence review exception",
+      deterministicEvidenceJson: {},
+    },
+    {
+      runId: originalRunId,
+      type: "UNKNOWN_ADJUSTMENT",
+      severity: "medium",
+      status: "OPEN",
+      amountAtRiskPaise: 500,
+      primaryRecordType: "adjustment",
+      primaryRecordId: 999_996,
+      summary: "Synthetic unresolved exception",
+      deterministicEvidenceJson: {},
+    },
+  ]).returning();
+  reviewExceptionId = reviewExceptions[0]!.id;
+  unresolvedExceptionId = reviewExceptions[1]!.id;
 });
 
 describe("investigation auto-resolution", () => {
@@ -72,7 +103,38 @@ describe("investigation auto-resolution", () => {
     expect(resolved!.resolvedAt).toBeInstanceOf(Date);
   });
 
+  it("counts review and unresolved dispositions once even when an investigation is repeated", async () => {
+    const reviewCaller: ModelCaller = async () => ({
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          exceptionId: reviewExceptionId,
+          rootCause: "fee_mismatch",
+          confidence: 0.5,
+          evidence: [{ recordId: "settlement:999997", reason: "The fee mismatch requires source verification." }],
+          recommendedAction: "create_review_case",
+          requiresHumanApproval: true,
+          explanation: "A reviewer should verify the source fee schedule.",
+        }),
+      }],
+      stop_reason: "end_turn",
+    });
+    await investigateException(reviewExceptionId, reviewCaller, path.resolve("/tmp", "test-review-metric-evidence.html"));
+    await investigateException(reviewExceptionId, reviewCaller, path.resolve("/tmp", "test-review-metric-evidence.html"));
+
+    const invalidCaller: ModelCaller = async () => ({
+      content: [{ type: "text", text: "not valid JSON" }],
+      stop_reason: "end_turn",
+    });
+    await investigateException(unresolvedExceptionId, invalidCaller, path.resolve("/tmp", "test-unresolved-metric-evidence.html"));
+
+    const [run] = await db.select().from(reconciliationRuns).where(eq(reconciliationRuns.id, originalRunId));
+    expect(run).toMatchObject({ autoResolvedCount: 1, humanReviewCount: 1, unresolvedCount: 1 });
+  });
+
   it("cleanup", () => {
-    if (existsSync(outputPath)) unlinkSync(outputPath);
+    for (const file of [outputPath, "/tmp/test-review-metric-evidence.html", "/tmp/test-unresolved-metric-evidence.html"]) {
+      if (existsSync(file)) unlinkSync(file);
+    }
   });
 });

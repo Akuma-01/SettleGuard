@@ -1,9 +1,9 @@
 /** Load exception -> investigate -> apply deterministic policy -> render evidence. */
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { writeFileSync } from "node:fs";
 import { db } from "../db/client.js";
-import { agentEvents, auditLogs, exceptions, investigations } from "../db/schema.js";
+import { agentEvents, auditLogs, exceptions, investigations, reconciliationRuns } from "../db/schema.js";
 import { decideResolution, type ResolutionDecisionBundle } from "../policy/decide-resolution.js";
 import { executeResolution, type ResolutionExecutionResult } from "../policy/execute-resolution.js";
 import { executeRerunAction, type RerunActionResult } from "../policy/rerun-action.js";
@@ -103,6 +103,7 @@ Use the available tools to gather whatever further context you need, then respon
   const { policy } = resolutionDecision;
   let resolutionExecution: ResolutionExecutionResult<RerunActionResult> | null = null;
   let resolutionFailure: string | null = null;
+  let newReviewDisposition: "human_review" | "unresolved" | null = null;
   let policyDecision: string;
   if (policy.decision === "auto_resolve") {
     try {
@@ -124,16 +125,19 @@ Use the available tools to gather whatever further context you need, then respon
             ? "ALREADY_RESOLVED"
             : `RERUN_${resolutionExecution.result.assessment.outcome.toUpperCase()}`;
         const review = await openPolicyReviewCase(exceptionId, policy.recommendedAction ?? "manual_investigation_required", [reason]);
+        if (review.created) newReviewDisposition = "human_review";
         policyDecision = `Auto-resolution did not clear the exception (${reason}). Review case #${review.reviewCase.id} ${review.created ? "created" : "reused"}.`;
       }
     } catch (error) {
       resolutionFailure = error instanceof Error ? error.message : String(error);
       const review = await openPolicyReviewCase(exceptionId, policy.recommendedAction ?? "manual_investigation_required", ["ACTION_EXECUTION_FAILED"]);
+      if (review.created) newReviewDisposition = "human_review";
       policyDecision = `Auto-resolution failed (${resolutionFailure}). Review case #${review.reviewCase.id} ${review.created ? "created" : "reused"}.`;
     }
   } else {
     const proposedAction = policy.recommendedAction ?? "manual_investigation_required";
     const review = await openPolicyReviewCase(exceptionId, proposedAction, policy.reasons);
+    if (review.created) newReviewDisposition = policy.decision;
     const disposition = policy.decision === "unresolved" ? "Unresolved" : "Human review required";
     policyDecision = `${disposition} (${policy.reasons.join(", ")}). Review case #${review.reviewCase.id} ${review.created ? "created" : "reused"}.`;
   }
@@ -178,6 +182,16 @@ Use the available tools to gather whatever further context you need, then respon
         afterJson: { error: resolutionFailure },
         metadataJson: { investigationId },
       });
+    }
+
+    if (newReviewDisposition === "human_review") {
+      await tx.update(reconciliationRuns)
+        .set({ humanReviewCount: sql<number>`coalesce(${reconciliationRuns.humanReviewCount}, 0) + 1` })
+        .where(eq(reconciliationRuns.id, exception.runId));
+    } else if (newReviewDisposition === "unresolved") {
+      await tx.update(reconciliationRuns)
+        .set({ unresolvedCount: sql<number>`coalesce(${reconciliationRuns.unresolvedCount}, 0) + 1` })
+        .where(eq(reconciliationRuns.id, exception.runId));
     }
   });
 
