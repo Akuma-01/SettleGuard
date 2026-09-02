@@ -5,6 +5,8 @@ import { writeFileSync } from "node:fs";
 import { db } from "../db/client.js";
 import { agentEvents, auditLogs, exceptions, investigations } from "../db/schema.js";
 import { decideResolution, type ResolutionDecisionBundle } from "../policy/decide-resolution.js";
+import { executeResolution, type ResolutionExecutionResult } from "../policy/execute-resolution.js";
+import { executeRerunAction, type RerunActionResult } from "../policy/rerun-action.js";
 import { executeControlledAction } from "./controlled-actions.js";
 import { toolDefinitions, executeTool } from "./tools.js";
 import { SYSTEM_PROMPT } from "./system-prompt.js";
@@ -22,6 +24,7 @@ export interface InvestigationSummary {
   evidencePagePath: string;
   outcome: InvestigationOutcome;
   resolutionDecision: ResolutionDecisionBundle;
+  resolutionExecution: ResolutionExecutionResult<RerunActionResult> | null;
 }
 
 interface ReviewCaseActionResult {
@@ -98,9 +101,36 @@ Use the available tools to gather whatever further context you need, then respon
 
   const resolutionDecision = decideResolution({ exception, outcome });
   const { policy } = resolutionDecision;
+  let resolutionExecution: ResolutionExecutionResult<RerunActionResult> | null = null;
+  let resolutionFailure: string | null = null;
   let policyDecision: string;
   if (policy.decision === "auto_resolve") {
-    policyDecision = `Eligible for auto-resolution (${policy.reasons.join(", ")}). No action was executed because the controlled action executor is not connected yet.`;
+    try {
+      resolutionExecution = await executeResolution({
+        exception,
+        outcome,
+        execute: async (plan) => {
+          if (plan.action === "rerun_reconciliation") return executeRerunAction(plan);
+          throw new Error(`Auto-execution is not implemented for ${plan.action}`);
+        },
+      });
+
+      if (resolutionExecution.status === "executed" && resolutionExecution.result.status === "executed" && resolutionExecution.result.resolved) {
+        policyDecision = `Auto-resolved after reconciliation run #${resolutionExecution.result.rerun.runId} proved the exception cleared.`;
+      } else {
+        const reason = resolutionExecution.status === "denied"
+          ? resolutionExecution.decision.policy.reasons.join(", ")
+          : resolutionExecution.result.status === "already_resolved"
+            ? "ALREADY_RESOLVED"
+            : `RERUN_${resolutionExecution.result.assessment.outcome.toUpperCase()}`;
+        const review = await openPolicyReviewCase(exceptionId, policy.recommendedAction ?? "manual_investigation_required", [reason]);
+        policyDecision = `Auto-resolution did not clear the exception (${reason}). Review case #${review.reviewCase.id} ${review.created ? "created" : "reused"}.`;
+      }
+    } catch (error) {
+      resolutionFailure = error instanceof Error ? error.message : String(error);
+      const review = await openPolicyReviewCase(exceptionId, policy.recommendedAction ?? "manual_investigation_required", ["ACTION_EXECUTION_FAILED"]);
+      policyDecision = `Auto-resolution failed (${resolutionFailure}). Review case #${review.reviewCase.id} ${review.created ? "created" : "reused"}.`;
+    }
   } else {
     const proposedAction = policy.recommendedAction ?? "manual_investigation_required";
     const review = await openPolicyReviewCase(exceptionId, proposedAction, policy.reasons);
@@ -133,12 +163,26 @@ Use the available tools to gather whatever further context you need, then respon
         exceptionId,
         deterministicSupport: resolutionDecision.support,
         actionPlan: resolutionDecision.actionPlan,
+        executionStatus: resolutionExecution?.status ?? null,
       },
     });
+
+    if (resolutionFailure !== null) {
+      await tx.insert(auditLogs).values({
+        actorType: "system",
+        actorId: "resolution-action-executor",
+        action: "resolution_action_failed",
+        entityType: "exception",
+        entityId: exceptionId,
+        beforeJson: resolutionDecision.actionPlan,
+        afterJson: { error: resolutionFailure },
+        metadataJson: { investigationId },
+      });
+    }
   });
 
   const html = renderEvidencePage({ exception, steps, outcome, policyDecision });
   writeFileSync(outputHtmlPath, html, "utf-8");
 
-  return { investigationId, outcomeStatus: outcome.status, policyDecision, evidencePagePath: outputHtmlPath, outcome, resolutionDecision };
+  return { investigationId, outcomeStatus: outcome.status, policyDecision, evidencePagePath: outputHtmlPath, outcome, resolutionDecision, resolutionExecution };
 }
