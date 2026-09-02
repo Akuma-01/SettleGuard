@@ -7,6 +7,7 @@ import { agentEvents, auditLogs, exceptions, investigations, reconciliationRuns 
 import { decideResolution, type ResolutionDecisionBundle } from "../policy/decide-resolution.js";
 import { executeResolution, type ResolutionExecutionResult } from "../policy/execute-resolution.js";
 import { executeRerunAction, type RerunActionResult } from "../policy/rerun-action.js";
+import type { ExecutableActionPlan } from "../policy/action-plan.js";
 import { executeControlledAction } from "./controlled-actions.js";
 import { toolDefinitions, executeTool } from "./tools.js";
 import { SYSTEM_PROMPT } from "./system-prompt.js";
@@ -16,6 +17,12 @@ import type { InvestigationOutcome } from "./schema.js";
 
 export const AGENT_MODEL = process.env.SETTLEGUARD_AGENT_MODEL ?? "claude-sonnet-5";
 export const PROMPT_VERSION = "day7-v2";
+export type ResolutionPlanExecutor = (plan: ExecutableActionPlan) => Promise<RerunActionResult>;
+
+const executeProductionResolutionPlan: ResolutionPlanExecutor = async (plan) => {
+  if (plan.action === "rerun_reconciliation") return executeRerunAction(plan);
+  throw new Error(`Auto-execution is not implemented for ${plan.action}`);
+};
 
 export interface InvestigationSummary {
   investigationId: number;
@@ -55,7 +62,12 @@ async function openPolicyReviewCase(exceptionId: number, proposedAction: string,
   return result;
 }
 
-export async function investigateException(exceptionId: number, callModel: ModelCaller, outputHtmlPath: string): Promise<InvestigationSummary> {
+export async function investigateException(
+  exceptionId: number,
+  callModel: ModelCaller,
+  outputHtmlPath: string,
+  executePlan: ResolutionPlanExecutor = executeProductionResolutionPlan,
+): Promise<InvestigationSummary> {
   const [exception] = await db.select().from(exceptions).where(eq(exceptions.id, exceptionId));
   if (!exception) throw new Error(`No exception with id ${exceptionId}`);
 
@@ -110,10 +122,7 @@ Use the available tools to gather whatever further context you need, then respon
       resolutionExecution = await executeResolution({
         exception,
         outcome,
-        execute: async (plan) => {
-          if (plan.action === "rerun_reconciliation") return executeRerunAction(plan);
-          throw new Error(`Auto-execution is not implemented for ${plan.action}`);
-        },
+        execute: executePlan,
       });
 
       if (resolutionExecution.status === "executed" && resolutionExecution.result.status === "executed" && resolutionExecution.result.resolved) {
