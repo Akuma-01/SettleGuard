@@ -7,7 +7,7 @@
  * settlement's expected_net_paise, and records run-level stats.
  */
 
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../db/client.js";
 import {
   adjustments,
@@ -34,6 +34,10 @@ export interface ReconciliationSummary {
   byType: Record<string, number>;
 }
 
+function settlementItemKey(item: Pick<typeof settlementItems.$inferInsert, "settlementId" | "itemType" | "paymentId" | "refundId">): string {
+  return `${item.settlementId}:${item.itemType}:${item.paymentId ?? "-"}:${item.refundId ?? "-"}`;
+}
+
 export async function runReconciliation(batchId: number): Promise<ReconciliationSummary> {
   const [run] = await db.insert(reconciliationRuns).values({ batchId, status: "processing", startedAt: new Date() }).returning();
   const runId = run!.id;
@@ -43,6 +47,10 @@ export async function runReconciliation(batchId: number): Promise<Reconciliation
   const allSettlements = await db.select().from(settlements).where(eq(settlements.batchId, batchId));
   const allBankTxns = await db.select().from(bankTransactions).where(eq(bankTransactions.batchId, batchId));
   const allAdjustments = await db.select().from(adjustments).where(eq(adjustments.batchId, batchId));
+  const existingItemRows = allSettlements.length > 0
+    ? await db.select().from(settlementItems).where(inArray(settlementItems.settlementId, allSettlements.map((settlement) => settlement.id)))
+    : [];
+  const existingItemKeys = new Set(existingItemRows.map(settlementItemKey));
 
   const refundsByPaymentId = new Map<number, typeof allRefunds>();
   for (const r of allRefunds) {
@@ -70,13 +78,18 @@ export async function runReconciliation(batchId: number): Promise<Reconciliation
     await db.update(settlements).set({ expectedNetPaise: result.expectedNetPaise }).where(eq(settlements.id, settlement.id));
 
     for (const item of result.items) {
-      allItemRows.push({
+      const itemRow = {
         settlementId: item.settlementId,
         paymentId: item.paymentId,
         refundId: item.refundId,
         itemType: item.itemType,
         amountPaise: item.amountPaise,
-      });
+      };
+      const itemKey = settlementItemKey(itemRow);
+      if (!existingItemKeys.has(itemKey)) {
+        allItemRows.push(itemRow);
+        existingItemKeys.add(itemKey);
+      }
       if (item.itemType === "payment") {
         allMatchRows.push({
           runId,
