@@ -38,6 +38,30 @@ export type DashboardResult =
   | { status: "not_found" }
   | { status: "unavailable" };
 
+export interface ExceptionRecord {
+  id: number;
+  runId: number;
+  type: string;
+  severity: string;
+  status: string;
+  amountAtRiskPaise: number;
+  summary: string | null;
+  createdAt: string;
+}
+
+export interface InvestigationSummary {
+  id: number;
+  status: string;
+  confidence: number | null;
+  rootCause: string | null;
+  recommendedAction: string | null;
+}
+
+export interface ExceptionList {
+  items: Array<{ exception: ExceptionRecord; latestInvestigation: InvestigationSummary | null }>;
+  pagination: { total: number; limit: number; offset: number };
+}
+
 async function apiResponse<T>(path: string): Promise<{ status: number; data: T | null }> {
   try {
     const response = await fetch(`${apiBaseUrl}${path}`, {
@@ -72,4 +96,9 @@ export async function getRunDashboard(runId: number): Promise<DashboardResult> {
   if (context.status === 404 || metrics.status === 404) return { status: "not_found" };
   if (!context.data || !metrics.data) return { status: "unavailable" };
   return { status: "ready", context: context.data, metrics: metrics.data };
+}
+
+export async function getExceptions(query: URLSearchParams): Promise<ExceptionList | null> {
+  const response = await apiResponse<ExceptionList>(`/api/exceptions?${query.toString()}`);
+  return response.data;
 }

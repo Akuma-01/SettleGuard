@@ -1,8 +1,8 @@
-import { getApiHealth, getRunDashboard, type DashboardResult } from "@/lib/api";
+import { ControlRoomShell } from "@/components/control-room-shell";
+import { getRunDashboard, type DashboardResult } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
-const navigation = ["Overview", "Exceptions", "Review queue", "Audit trail"];
 const integer = new Intl.NumberFormat("en-IN");
 const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" });
 const label = (value: string) => value.toLowerCase().replaceAll("_", " ");
@@ -62,24 +62,13 @@ function Dashboard({ result }: { result: Extract<DashboardResult, { status: "rea
 }
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ runId?: string }> }) {
-  const [{ runId }, health] = await Promise.all([searchParams, getApiHealth()]);
+  const { runId } = await searchParams;
   const parsedRunId = runId && /^[1-9]\d*$/.test(runId) && Number.isSafeInteger(Number(runId)) ? Number(runId) : null;
   const result = parsedRunId ? await getRunDashboard(parsedRunId) : null;
 
   return (
-    <main className="control-room">
-      <aside className="sidebar">
-        <div className="brand"><span className="brand-mark" aria-hidden="true">SG</span><div><strong>SettleGuard</strong><span>Finance control room</span></div></div>
-        <nav aria-label="Primary navigation">{navigation.map((item, index) => <div className={index === 0 ? "nav-item active" : "nav-item"} key={item}><span>0{index + 1}</span>{item}</div>)}</nav>
-        <div className="sidebar-foot"><span className={health ? "status-dot online" : "status-dot"} /><div><strong>{health ? "Systems operational" : "API unavailable"}</strong><span>{health ? `${health.service} · v${health.version}` : "Start the API on port 4000"}</span></div></div>
-      </aside>
-      <section className="workspace">
-        <header className="topbar">
-          <div><span className="eyebrow">SETTLEMENT OPERATIONS / OVERVIEW</span><h1>Reconciliation control room</h1></div>
-          <form className="run-selector"><label htmlFor="runId">Run ID</label><input id="runId" name="runId" inputMode="numeric" pattern="[1-9][0-9]*" defaultValue={parsedRunId ?? ""} placeholder="e.g. 1" required /><button type="submit">Load run</button></form>
-        </header>
+    <ControlRoomShell active="Overview" eyebrow="SETTLEMENT OPERATIONS / OVERVIEW" title="Reconciliation control room" actions={<form className="run-selector"><label htmlFor="runId">Run ID</label><input id="runId" name="runId" inputMode="numeric" pattern="[1-9][0-9]*" defaultValue={parsedRunId ?? ""} placeholder="e.g. 1" required /><button type="submit">Load run</button></form>}>
         {result?.status === "ready" ? <Dashboard result={result} /> : <EmptyDashboard result={result} />}
-      </section>
-    </main>
+    </ControlRoomShell>
   );
 }
