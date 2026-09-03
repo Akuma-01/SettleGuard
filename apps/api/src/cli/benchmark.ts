@@ -37,7 +37,7 @@ async function main() {
   console.log(`Match rate: ${pct(report.matchRate)}`);
   console.log(`Precision:  ${pct(report.score.precision)}  (${report.score.truePositives}/${report.score.totalDetected} flagged exceptions were real)`);
   console.log(`Recall:     ${pct(report.score.recall)}  (${report.score.truePositives}/${report.score.totalGroundTruth} injected exceptions were caught)`);
-  console.log(`Resolution accuracy: N/A — Phase 5 (policy engine) not built yet`);
+  console.log(`Resolution accuracy: evaluated separately by the agent regression suite`);
   console.log(`Throughput: ${report.throughputRecordsPerSecond.toFixed(0)} records/sec (reconciliation only, ${report.reconciliationDurationMs}ms for ${report.totalRecords} records)`);
   console.log();
   console.log("By exception type (ground truth / detected / matched):");

@@ -129,7 +129,7 @@ npm run benchmark -- --dataset demo  # quicker sanity check, 500 payments
 Match rate: 98.05%
 Precision:  100.00%  (125/125 flagged exceptions were real)
 Recall:     100.00%  (125/125 injected exceptions were caught)
-Throughput: 3314 records/sec (reconciliation only, 1767ms for 5855 records)
+Throughput: 3521 records/sec (reconciliation only, 1663ms for 5855 records)
 ```
 
 Run this after every later phase (the agent, the policy engine, the

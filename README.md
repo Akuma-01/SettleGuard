@@ -1,78 +1,158 @@
 # SettleGuard
 
-AI finance controller that reconciles payments, refunds, settlements, and
-bank credits, investigates mismatches with a bounded tool-calling agent,
-and reports measured match/exception accuracy with an honest unresolved list.
+SettleGuard is an AI finance controller for settlement reconciliation. It
+deterministically matches payments, refunds, settlements, adjustments, and bank
+credits; detects discrepancies; then uses a bounded agent to investigate only
+the exceptions that need judgment.
 
 Built for the Razorpay AI Buildathon, Track 04 — AI Finance Controller.
 
-**Status: Phases 1-6 are complete.** CSV ingestion, deterministic
-reconciliation, benchmark scoring, bounded AI investigation, policy-controlled
-resolution, human review, audit history, and the complete HTTP API are wired end
-to end. The test suite uses real PostgreSQL for integration paths and scripted
-models where an Anthropic call is not the behavior under test.
+## Measured result
 
-## Run it
+| Benchmark | Result |
+|---|---:|
+| Financial records | 5,855 |
+| Payments | 5,000 |
+| Match rate | 98.05% |
+| Exception precision | 100.00% (125/125) |
+| Exception recall | 100.00% (125/125) |
+| Reconciliation throughput | 3,521 records/sec |
+
+These values were produced by `npm run benchmark` on the checked-in synthetic
+benchmark dataset. They are not UI fixtures. See
+[benchmark methodology](docs/BENCHMARK_RESULTS.md) for the full breakdown.
+
+## The problem
+
+Finance teams reconcile records spread across payment processors and bank
+statements. A missing settlement, duplicate refund, unexpected adjustment, fee
+error, or ambiguous bank credit can require a manual trail through several
+systems. A chatbot alone is unsafe here: money calculations and matching must be
+repeatable, and every conclusion needs evidence.
+
+SettleGuard separates those responsibilities:
+
+- deterministic code owns normalization, arithmetic, matching, and exception detection;
+- a tool-limited agent investigates ambiguous exceptions using retrieved records;
+- policy code—not the model—decides whether to auto-resolve, request review, or remain unresolved;
+- every controlled action produces an audit entry.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  CSV[Five CSV sources] --> INGEST[Validate + normalize]
+  INGEST --> PG[(PostgreSQL)]
+  PG --> RECON[Deterministic reconciliation]
+  RECON --> METRICS[Measured metrics]
+  RECON --> EX[Exceptions]
+  EX --> AGENT[Bounded investigation agent]
+  AGENT --> TOOLS[Read-only + calculation tools]
+  TOOLS --> PG
+  AGENT --> POLICY[Deterministic policy gate]
+  POLICY --> AUTO[Safe auto-resolution]
+  POLICY --> REVIEW[Human review]
+  POLICY --> OPEN[Honest unresolved]
+  AUTO --> AUDIT[Audit trail]
+  REVIEW --> AUDIT
+  METRICS --> API[Fastify API]
+  EX --> API
+  AUDIT --> API
+  API --> WEB[Next.js control room]
+```
+
+The agent has an exact eight-tool-call budget, schema-validated output, one
+repair attempt, grounded evidence IDs, and explicit `AI_ERROR` or insufficient-
+evidence outcomes. It cannot issue SQL, modify monetary source records, approve
+its own high-risk proposal, or bypass policy thresholds.
+
+## Control room
+
+The Next.js UI provides:
+
+- one-click bundled demo ingestion and reconciliation;
+- five-file CSV upload and automatic reconciliation;
+- live match, exception, risk, and resolution metrics;
+- filtered and paginated exception ledger;
+- deterministic evidence, agent trace, conclusion, and confidence detail;
+- controlled investigate, approve, reject, and mark-unresolved actions;
+- filtered, immutable audit history.
+
+## Quick demo with containers
+
+Prerequisite: Docker with Compose.
 
 ```bash
+ANTHROPIC_API_KEY=your_key docker compose up --build
+```
+
+Open `http://localhost:3000`, select **Run demo**, open an exception, and inspect
+its evidence. Investigation requires the Anthropic key; deterministic ingestion,
+reconciliation, metrics, exceptions, and audit browsing do not.
+
+## Local development
+
+Prerequisites: Node.js 20.9+ and PostgreSQL 14+.
+
+```bash
+# Generate/re-generate datasets
 npm install
-npm run proof && npm run generate:demo && npm run generate:benchmark && npm run generate:agent-slice
+npm run generate:demo
+npm run generate:benchmark
+npm run generate:agent-slice
 
-cd apps/api && npm install
-cp .env.example .env       # see apps/api/README.md for Postgres + Anthropic setup
+# API (terminal 1)
+cd apps/api
+npm install
+cp .env.example .env
 npm run db:push
-npm test                    # 219 tests
-npm run benchmark           # 100% precision/recall, unattended
-npm run dev                 # HTTP API on http://localhost:4000
+npm run dev
 
-npm run ingest -- ../../datasets/agent-slice agent-slice-001
-npm run reconcile -- <batchId>       # printed by ingest above
-npm run investigate -- <exceptionId>  # printed by reconcile above — needs ANTHROPIC_API_KEY
-npm run agent:regression -- <runId>   # six real exception classes — needs ANTHROPIC_API_KEY
+# Web (terminal 2)
+cd apps/web
+npm install
+cp .env.example .env.local
+npm run dev
 ```
 
-## What's built
+Open `http://localhost:3000`. API health is available at
+`http://localhost:4000/health` and checks database readiness.
 
-- **Phase 1** (`scripts/`) — synthetic data generator, 4 scale tiers
-  now including a tiny agent-slice preset (Day 1-2, 6).
-- **Phase 2** (`apps/api/src/db/`, `.../ingestion/`, `.../reconciliation/`)
-  — PostgreSQL schema, CSV ingestion, the full deterministic matching
-  and exception-detection engine (Days 3-4). Zero AI.
-- **Phase 3** (`apps/api/src/benchmark/`) — `npm run benchmark`: one
-  unattended command, 100% precision/recall at both demo and benchmark
-  scale (Day 5).
-- **Phase 4** (`apps/api/src/agent/`) — the agent vertical slice plus
-  10 input-validated evidence tools and 4
-  deterministic analysis tools, plus 2 authorization-gated workflow
-  actions for review cases and adjustment proposals,
-  a tool-calling loop with an exact 8-call budget and isolated provider/tool
-  failures, record-grounded evidence citations, Zod-validated structured output with one repair retry
-  before an honest `AI_ERROR`, and a static HTML evidence page.
-- **Phase 5** (`apps/api/src/policy/`) — deterministic authorization gates,
-  safe auto-resolution, human-review decisions, rerun assessment, controlled
-  link actions, and immutable audit entries.
-- **Phase 6** (`apps/api/src/http/`) — the complete Fastify API for loading or
-  uploading batches, reconciliation, metrics, exceptions, investigation,
-  review decisions, and audit history.
+## Verification
 
-## What's next
+```bash
+cd apps/api
+npm test                 # 42 files, 219 tests
+npm run benchmark        # fresh ingest → reconcile → ground-truth scoring
+npm audit --omit=dev     # production dependency audit
 
-Phase 7 builds the control-room frontend on the existing API: dashboard,
-exception list, exception detail, and human-review actions. The deterministic
-benchmark remains the regression gate underneath the agent and UI.
-
-## Structure so far
-
-```
-settleguard/
-├── apps/api/
-│   ├── src/{db,ingestion,reconciliation,benchmark,agent,policy,http,cli}/
-│   └── tests/
-├── scripts/
-│   ├── phase1-step1-proof.ts
-│   ├── generate-dataset.ts
-│   └── generator/
-└── datasets/{demo,benchmark,agent-slice}/
+cd ../web
+npm run typecheck
+npm run build
+npm run test:e2e         # real Chromium P0 operator journey
 ```
 
-`apps/web` is the next addition for Phase 7.
+The E2E test starts both services and verifies demo ingestion, reconciliation,
+live metrics, exception navigation, evidence detail, and audit navigation against
+real PostgreSQL.
+
+## Repository structure
+
+```text
+apps/api/       ingestion, reconciliation, benchmark, agent, policy, HTTP API
+apps/web/       Next.js control room and Playwright journey
+datasets/       demo, benchmark, and focused agent-regression data
+scripts/        deterministic synthetic dataset generator
+docs/           benchmark evidence, demo script, and known limitations
+compose.yaml    PostgreSQL + API + web production-like stack
+```
+
+## Submission notes
+
+- [Benchmark results and methodology](docs/BENCHMARK_RESULTS.md)
+- [Five-minute demo flow](docs/DEMO.md)
+- [Known limitations](docs/KNOWN_LIMITATIONS.md)
+
+SettleGuard preserves uncertainty instead of hiding it: unsupported or
+low-confidence cases stay visible for a person, with the evidence and activity
+trail needed to make a defensible decision.
