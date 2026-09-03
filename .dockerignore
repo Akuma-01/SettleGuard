@@ -1,0 +1,14 @@
+.git
+.gitignore
+**/node_modules
+**/dist
+**/.next
+**/.env
+**/.env.local
+**/coverage
+**/artifacts
+**/playwright-report
+**/test-results
+*.log
+SettleGuard_AI_Finance_Controller_Blueprint.md
+SettleGuard_Build_Sequence_and_Architecture.md

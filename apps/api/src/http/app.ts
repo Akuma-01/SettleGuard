@@ -9,6 +9,7 @@ import { anthropicCaller } from "../agent/client.js";
 import type { ModelCaller } from "../agent/loop.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { pool } from "../db/client.js";
 
 export interface ApiErrorBody {
   error: {
@@ -34,11 +35,14 @@ export function buildApp(
     demoDatasetDirectory: dependencyOverrides.demoDatasetDirectory ?? fileURLToPath(new URL("../../../../datasets/demo", import.meta.url)),
   };
 
-  app.get("/health", async () => ({
-    status: "ok",
-    service: "settleguard-api",
-    version: "0.1.0",
-  }));
+  app.get("/health", async (_request, reply) => {
+    try {
+      await pool.query("select 1");
+      return { status: "ok", service: "settleguard-api", version: "0.1.0" };
+    } catch {
+      return reply.code(503).send({ status: "degraded", service: "settleguard-api", version: "0.1.0" });
+    }
+  });
   void app.register(multipart, {
     limits: {
       fields: 1,

@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: "standalone",
   turbopack: {
     root: fileURLToPath(new URL("../..", import.meta.url)),
   },
