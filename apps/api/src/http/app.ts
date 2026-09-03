@@ -2,6 +2,9 @@ import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastif
 import { registerBatchRoutes } from "./routes/batches.js";
 import { registerRunRoutes } from "./routes/runs.js";
 import { registerExceptionRoutes } from "./routes/exceptions.js";
+import { anthropicCaller } from "../agent/client.js";
+import type { ModelCaller } from "../agent/loop.js";
+import path from "node:path";
 
 export interface ApiErrorBody {
   error: {
@@ -10,8 +13,20 @@ export interface ApiErrorBody {
   };
 }
 
-export function buildApp(options: FastifyServerOptions = { logger: false }): FastifyInstance {
+export interface AppDependencies {
+  modelCaller: ModelCaller;
+  evidenceOutputDirectory: string;
+}
+
+export function buildApp(
+  options: FastifyServerOptions = { logger: false },
+  dependencyOverrides: Partial<AppDependencies> = {},
+): FastifyInstance {
   const app = Fastify(options);
+  const dependencies: AppDependencies = {
+    modelCaller: dependencyOverrides.modelCaller ?? anthropicCaller,
+    evidenceOutputDirectory: dependencyOverrides.evidenceOutputDirectory ?? path.resolve(process.cwd(), "artifacts", "investigations"),
+  };
 
   app.get("/health", async () => ({
     status: "ok",
@@ -20,7 +35,7 @@ export function buildApp(options: FastifyServerOptions = { logger: false }): Fas
   }));
   void app.register(registerBatchRoutes);
   void app.register(registerRunRoutes);
-  void app.register(registerExceptionRoutes);
+  void app.register(registerExceptionRoutes, dependencies);
 
   app.setNotFoundHandler(async (_request, reply) => {
     return reply.code(404).send({

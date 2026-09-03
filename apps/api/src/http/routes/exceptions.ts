@@ -1,9 +1,13 @@
 import { and, asc, count, desc, eq, inArray, or, type SQL } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
+import { investigateException } from "../../agent/investigate.js";
 import { db } from "../../db/client.js";
 import { agentEvents, auditLogs, batches, exceptions, investigations, merchants, reconciliationRuns, reviewCases } from "../../db/schema.js";
 import type { ApiErrorBody } from "../app.js";
 import { parsePositiveId } from "../params.js";
+import type { AppDependencies } from "../app.js";
 
 const exceptionStatuses = new Set(["OPEN", "AUTO_RESOLVED", "HUMAN_RESOLVED", "UNRESOLVED"]);
 const exceptionTypes = new Set(["MISSING_SETTLEMENT", "FEE_MISMATCH", "UNKNOWN_ADJUSTMENT", "DUPLICATE_REFUND", "BANK_CREDIT_MISMATCH", "AMBIGUOUS_MATCH"]);
@@ -23,7 +27,33 @@ function parseNonNegativeInteger(value: string | undefined, fallback: number): n
   return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
-export async function registerExceptionRoutes(app: FastifyInstance): Promise<void> {
+export async function registerExceptionRoutes(app: FastifyInstance, dependencies: AppDependencies): Promise<void> {
+  app.post<{ Params: { id: string } }>("/api/exceptions/:id/investigate", async (request, reply) => {
+    const exceptionId = parsePositiveId(request.params.id);
+    if (exceptionId === null) {
+      return reply.code(400).send({ error: { code: "INVALID_EXCEPTION_ID", message: "Exception id must be a positive integer" } } satisfies ApiErrorBody);
+    }
+    const [exception] = await db.select().from(exceptions).where(eq(exceptions.id, exceptionId));
+    if (!exception) {
+      return reply.code(404).send({ error: { code: "EXCEPTION_NOT_FOUND", message: `No exception with id ${exceptionId}` } } satisfies ApiErrorBody);
+    }
+    if (exception.status !== "OPEN" || exception.resolvedAt !== null) {
+      return reply.code(409).send({ error: { code: "EXCEPTION_NOT_OPEN", message: `Exception ${exceptionId} is not open for investigation` } } satisfies ApiErrorBody);
+    }
+    const [active] = await db.select({ id: investigations.id }).from(investigations).where(and(
+      eq(investigations.exceptionId, exceptionId),
+      eq(investigations.status, "in_progress"),
+    ));
+    if (active) {
+      return reply.code(409).send({ error: { code: "INVESTIGATION_IN_PROGRESS", message: `Investigation ${active.id} is already in progress` } } satisfies ApiErrorBody);
+    }
+
+    await mkdir(dependencies.evidenceOutputDirectory, { recursive: true });
+    const outputPath = path.join(dependencies.evidenceOutputDirectory, `exception-${exceptionId}-${Date.now()}.html`);
+    const summary = await investigateException(exceptionId, dependencies.modelCaller, outputPath);
+    return reply.code(201).send({ investigation: summary });
+  });
+
   app.get<{ Params: { id: string } }>("/api/exceptions/:id", async (request, reply) => {
     const exceptionId = parsePositiveId(request.params.id);
     if (exceptionId === null) {
