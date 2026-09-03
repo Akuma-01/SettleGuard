@@ -3,6 +3,7 @@ import { registerBatchRoutes } from "./routes/batches.js";
 import { registerRunRoutes } from "./routes/runs.js";
 import { registerExceptionRoutes } from "./routes/exceptions.js";
 import { registerReviewCaseRoutes } from "./routes/review-cases.js";
+import { registerAuditRoutes } from "./routes/audit.js";
 import { anthropicCaller } from "../agent/client.js";
 import type { ModelCaller } from "../agent/loop.js";
 import path from "node:path";
@@ -38,6 +39,7 @@ export function buildApp(
   void app.register(registerRunRoutes);
   void app.register(registerExceptionRoutes, dependencies);
   void app.register(registerReviewCaseRoutes);
+  void app.register(registerAuditRoutes);
 
   app.setNotFoundHandler(async (_request, reply) => {
     return reply.code(404).send({
