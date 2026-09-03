@@ -76,6 +76,22 @@ export interface ExceptionDetail {
 
 export type ExceptionDetailResult = { status: "ready"; data: ExceptionDetail } | { status: "not_found" } | { status: "unavailable" };
 
+export interface AuditList {
+  items: Array<{
+    id: number;
+    actorType: string;
+    actorId: string | null;
+    action: string;
+    entityType: string;
+    entityId: number | null;
+    beforeJson: unknown;
+    afterJson: unknown;
+    metadataJson: unknown;
+    createdAt: string;
+  }>;
+  pagination: { total: number; limit: number; offset: number };
+}
+
 async function apiResponse<T>(path: string): Promise<{ status: number; data: T | null }> {
   try {
     const response = await fetch(`${apiBaseUrl}${path}`, {
@@ -156,4 +172,9 @@ export async function getExceptionDetail(exceptionId: number): Promise<Exception
   const response = await apiResponse<ExceptionDetail>(`/api/exceptions/${exceptionId}`);
   if (response.status === 404) return { status: "not_found" };
   return response.data ? { status: "ready", data: response.data } : { status: "unavailable" };
+}
+
+export async function getAuditEntries(query: URLSearchParams): Promise<AuditList | null> {
+  const response = await apiResponse<AuditList>(`/api/audit?${query.toString()}`);
+  return response.data;
 }

@@ -53,7 +53,7 @@ export default async function ExceptionsPage({ searchParams }: { searchParams: P
             ))}
             {data.items.length === 0 && <div className="no-results">No exceptions match these filters.</div>}
           </div>
-          <div className="pagination"><Link aria-disabled={page <= 1} href={page > 1 ? pageHref(page - 1) : pageHref(1)}>← Previous</Link><span>{data.pagination.offset + 1}–{Math.min(data.pagination.offset + data.items.length, data.pagination.total)} of {data.pagination.total}</span><Link aria-disabled={page >= pageCount} href={page < pageCount ? pageHref(page + 1) : pageHref(pageCount)}>Next →</Link></div>
+          <div className="pagination"><Link aria-disabled={page <= 1} href={page > 1 ? pageHref(page - 1) : pageHref(1)}>← Previous</Link><span>{data.pagination.total === 0 ? 0 : data.pagination.offset + 1}–{Math.min(data.pagination.offset + data.items.length, data.pagination.total)} of {data.pagination.total}</span><Link aria-disabled={page >= pageCount} href={page < pageCount ? pageHref(page + 1) : pageHref(pageCount)}>Next →</Link></div>
         </section>
       )}
     </ControlRoomShell>
