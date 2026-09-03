@@ -139,6 +139,23 @@ export async function postApiData<T>(path: string, body?: unknown): Promise<{ da
   }
 }
 
+export async function postMultipartData<T>(path: string, body: FormData): Promise<{ data: T | null; message: string }> {
+  try {
+    const response = await fetch(`${apiBaseUrl}${path}`, {
+      method: "POST",
+      body,
+      cache: "no-store",
+      signal: AbortSignal.timeout(60_000),
+    });
+    const payload = await response.json() as T & { error?: { message?: string } };
+    return response.ok
+      ? { data: payload, message: "Upload completed successfully." }
+      : { data: null, message: payload.error?.message ?? `Upload failed with status ${response.status}.` };
+  } catch {
+    return { data: null, message: "The API could not be reached." };
+  }
+}
+
 export async function getApiHealth(): Promise<ApiHealth | null> {
   try {
     const response = await fetch(`${apiBaseUrl}/health`, {

@@ -5,7 +5,7 @@ import { getApiHealth } from "@/lib/api";
 const navigation = [
   { label: "Overview", index: "01", href: "/" },
   { label: "Exceptions", index: "02", href: "/exceptions" },
-  { label: "Review queue", index: "03", href: "/exceptions?status=OPEN" },
+  { label: "Open exceptions", index: "03", href: "/exceptions?status=OPEN" },
   { label: "Audit trail", index: "04", href: "/audit" },
 ];
 

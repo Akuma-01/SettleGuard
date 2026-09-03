@@ -75,6 +75,26 @@ h1 { margin: 8px 0 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; lette
 .dashboard-actions form { margin: 0; }
 .demo-button { height: 38px; border: 1px solid var(--green); border-radius: 8px; background: var(--signal); color: var(--green); padding: 0 15px; font-size: 11px; font-weight: 750; cursor: pointer; }
 .dashboard-feedback { margin: 18px 0 -6px; }
+.upload-workflow { margin-top: 18px; border: 1px solid var(--line); border-radius: 12px; background: rgba(251,250,246,.7); }
+.upload-workflow summary { display: flex; justify-content: space-between; align-items: center; padding: 14px 17px; cursor: pointer; list-style: none; }
+.upload-workflow summary::-webkit-details-marker { display: none; }
+.upload-workflow summary > span { display: grid; gap: 3px; }
+.upload-workflow summary strong { font-size: 11px; }
+.upload-workflow summary small { color: var(--muted); font-size: 9px; }
+.upload-workflow summary i { color: var(--green); font-style: normal; }
+.upload-workflow[open] summary { border-bottom: 1px solid var(--line); }
+.upload-workflow[open] summary i { transform: rotate(45deg); }
+.upload-workflow form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 17px; }
+.upload-workflow label { display: grid; gap: 6px; color: var(--muted); font: 500 9px/1 var(--font-mono), monospace; text-transform: uppercase; }
+.upload-workflow input { min-width: 0; height: 38px; border: 1px solid var(--line); border-radius: 7px; background: white; padding: 8px; color: var(--ink); font-size: 10px; }
+.upload-workflow input[type="file"] { height: auto; }
+.upload-workflow button { align-self: end; height: 38px; border: 0; border-radius: 8px; background: var(--green); color: white; padding: 0 14px; font-size: 10px; font-weight: 700; cursor: pointer; }
+.route-loading { min-height: 100vh; display: flex; align-items: center; justify-content: center; gap: 14px; background: var(--paper); }
+.loading-mark { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--green); color: var(--signal); font: 500 11px/1 var(--font-mono), monospace; animation: pulse 1.2s ease-in-out infinite; }
+.route-loading > div:last-child { display: grid; gap: 4px; }
+.route-loading strong { font-size: 13px; }
+.route-loading span { color: var(--muted); font-size: 10px; }
+@keyframes pulse { 50% { opacity: .55; transform: scale(.96); } }
 .run-selector label { font: 500 10px/1 var(--font-mono), monospace; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
 .run-selector input { width: 84px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 11px; color: var(--ink); font: 500 12px/1 var(--font-mono), monospace; outline: none; }
 .run-selector input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(19,78,58,.1); }
@@ -233,6 +253,7 @@ h1 { margin: 8px 0 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; lette
   .run-selector { width: 100%; }
   .dashboard-actions { width: 100%; align-items: stretch; flex-direction: column; }
   .dashboard-actions form:first-child, .demo-button { width: 100%; }
+  .upload-workflow form { grid-template-columns: 1fr; }
   .run-selector input { flex: 1; }
   .metric-grid, .dashboard-lower { grid-template-columns: 1fr; }
   .filter-bar { align-items: stretch; flex-direction: column; }

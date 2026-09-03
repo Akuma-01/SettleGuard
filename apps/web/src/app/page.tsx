@@ -1,6 +1,6 @@
 import { ControlRoomShell } from "@/components/control-room-shell";
 import { getRunDashboard, type DashboardResult } from "@/lib/api";
-import { runDemoAction } from "./actions";
+import { runDemoAction, uploadDatasetAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +70,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
   return (
     <ControlRoomShell active="Overview" eyebrow="SETTLEMENT OPERATIONS / OVERVIEW" title="Reconciliation control room" actions={<div className="dashboard-actions"><form action={runDemoAction}><button className="demo-button" type="submit">Run demo</button></form><form className="run-selector"><label htmlFor="runId">Run ID</label><input id="runId" name="runId" inputMode="numeric" pattern="[1-9][0-9]*" defaultValue={parsedRunId ?? ""} placeholder="e.g. 1" required /><button type="submit">Load run</button></form></div>}>
         {(notice || error) && <div className={error ? "action-feedback error dashboard-feedback" : "action-feedback dashboard-feedback"}>{error ?? notice}</div>}
+        <details className="upload-workflow">
+          <summary><span><strong>Upload reconciliation dataset</strong><small>Five CSV sources · automatically reconciled</small></span><i>＋</i></summary>
+          <form action={uploadDatasetAction}>
+            <label>Batch name<input name="batchName" pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,79}" placeholder="september-settlement" required /></label>
+            {(["payments.csv", "refunds.csv", "settlements.csv", "bank_transactions.csv", "adjustments.csv"] as const).map((name) => <label className="file-field" key={name}><span>{name}</span><input name="files" type="file" accept=".csv,text/csv" required /></label>)}
+            <button type="submit">Upload and reconcile</button>
+          </form>
+        </details>
         {result?.status === "ready" ? <Dashboard result={result} /> : <EmptyDashboard result={result} />}
     </ControlRoomShell>
   );
