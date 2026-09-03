@@ -2,3 +2,5 @@
 node_modules/
 tsconfig.tsbuildinfo
 .env.local
+playwright-report/
+test-results/
