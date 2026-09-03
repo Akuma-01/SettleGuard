@@ -1,9 +1,12 @@
 import { and, count, desc, eq } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 import { db } from "../../db/client.js";
 import { adjustments, bankTransactions, batches, merchants, payments, reconciliationRuns, refunds, settlements } from "../../db/schema.js";
 import { runReconciliation } from "../../reconciliation/run.js";
+import { ingestDataset } from "../../ingestion/ingest-batch.js";
 import type { ApiErrorBody } from "../app.js";
+import type { AppDependencies } from "../app.js";
 import { parsePositiveId } from "../params.js";
 
 async function tableCount(table: typeof payments | typeof refunds | typeof settlements | typeof bankTransactions | typeof adjustments, batchId: number) {
@@ -11,7 +14,31 @@ async function tableCount(table: typeof payments | typeof refunds | typeof settl
   return row!.value;
 }
 
-export async function registerBatchRoutes(app: FastifyInstance): Promise<void> {
+const demoRequestSchema = z.object({
+  batchName: z.string().trim().regex(/^[A-Za-z0-9][A-Za-z0-9._-]{2,79}$/).optional(),
+}).strict().default({});
+
+export async function registerBatchRoutes(app: FastifyInstance, dependencies: AppDependencies): Promise<void> {
+  app.post<{ Body: unknown }>("/api/batches/demo", async (request, reply) => {
+    const input = demoRequestSchema.safeParse(request.body);
+    if (!input.success) {
+      return reply.code(400).send({
+        error: { code: "INVALID_DEMO_BATCH", message: "batchName must be 3-80 characters using letters, numbers, dots, underscores, or hyphens" },
+      } satisfies ApiErrorBody);
+    }
+    const batchName = input.data.batchName ?? `demo-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+    try {
+      const ingestion = await ingestDataset(dependencies.demoDatasetDirectory, batchName);
+      return reply.code(201).send({ ingestion });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.startsWith("Batch \"") && message.includes("already exists")) {
+        return reply.code(409).send({ error: { code: "BATCH_ALREADY_EXISTS", message } } satisfies ApiErrorBody);
+      }
+      throw error;
+    }
+  });
+
   app.post<{ Params: { id: string } }>("/api/batches/:id/reconcile", async (request, reply) => {
     const batchId = parsePositiveId(request.params.id);
     if (batchId === null) {

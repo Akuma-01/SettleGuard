@@ -7,6 +7,7 @@ import { registerAuditRoutes } from "./routes/audit.js";
 import { anthropicCaller } from "../agent/client.js";
 import type { ModelCaller } from "../agent/loop.js";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 export interface ApiErrorBody {
   error: {
@@ -18,6 +19,7 @@ export interface ApiErrorBody {
 export interface AppDependencies {
   modelCaller: ModelCaller;
   evidenceOutputDirectory: string;
+  demoDatasetDirectory: string;
 }
 
 export function buildApp(
@@ -28,6 +30,7 @@ export function buildApp(
   const dependencies: AppDependencies = {
     modelCaller: dependencyOverrides.modelCaller ?? anthropicCaller,
     evidenceOutputDirectory: dependencyOverrides.evidenceOutputDirectory ?? path.resolve(process.cwd(), "artifacts", "investigations"),
+    demoDatasetDirectory: dependencyOverrides.demoDatasetDirectory ?? fileURLToPath(new URL("../../../../datasets/demo", import.meta.url)),
   };
 
   app.get("/health", async () => ({
@@ -35,7 +38,7 @@ export function buildApp(
     service: "settleguard-api",
     version: "0.1.0",
   }));
-  void app.register(registerBatchRoutes);
+  void app.register(registerBatchRoutes, dependencies);
   void app.register(registerRunRoutes);
   void app.register(registerExceptionRoutes, dependencies);
   void app.register(registerReviewCaseRoutes);
