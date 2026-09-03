@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #17201d;
+  --muted: #66716c;
+  --paper: #f3f0e8;
+  --panel: #fbfaf6;
+  --line: #d8d7cf;
+  --green: #134e3a;
+  --signal: #d9ff57;
+}
+
+* { box-sizing: border-box; }
+
+html, body { min-height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans), sans-serif;
+}
+
+.control-room {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 272px 1fr;
+}
+
+.sidebar {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 24px 24px;
+  background: var(--green);
+  color: #f8f7f1;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-mark {
+  display: grid; place-items: center; width: 42px; height: 42px;
+  border: 1px solid rgba(255,255,255,.34); border-radius: 12px;
+  color: var(--signal); font: 500 13px/1 var(--font-mono), monospace;
+}
+.brand div, .sidebar-foot div { display: grid; gap: 2px; }
+.brand strong { font-size: 17px; letter-spacing: -.02em; }
+.brand span:last-child, .sidebar-foot span { color: rgba(255,255,255,.58); font-size: 11px; }
+
+nav { display: grid; gap: 8px; margin-top: 64px; }
+.nav-item {
+  display: flex; align-items: center; gap: 14px; padding: 13px 14px;
+  border-radius: 9px; color: rgba(255,255,255,.55); font-size: 13px;
+}
+.nav-item span { font: 400 10px/1 var(--font-mono), monospace; }
+.nav-item.active { background: rgba(255,255,255,.1); color: white; }
+.nav-item.active span { color: var(--signal); }
+
+.sidebar-foot {
+  margin-top: auto; display: flex; gap: 10px; align-items: center;
+  padding-top: 22px; border-top: 1px solid rgba(255,255,255,.12);
+}
+.sidebar-foot strong { font-size: 11px; font-weight: 600; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #e06b58; box-shadow: 0 0 0 4px rgba(224,107,88,.12); }
+.status-dot.online { background: var(--signal); box-shadow: 0 0 0 4px rgba(217,255,87,.12); }
+
+.workspace { min-width: 0; padding: 30px 40px 40px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+.eyebrow, .sequence { font: 500 10px/1.2 var(--font-mono), monospace; letter-spacing: .12em; color: var(--muted); }
+h1 { margin: 8px 0 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; letter-spacing: -.045em; }
+.environment { display: flex; align-items: center; gap: 8px; font: 500 10px/1 var(--font-mono), monospace; color: var(--muted); }
+.environment span { width: 6px; height: 6px; border-radius: 50%; background: #e3a43d; }
+
+.empty-state {
+  min-height: calc(100vh - 160px); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; padding: 64px 24px;
+}
+.empty-icon { width: 82px; height: 82px; display: flex; align-items: end; justify-content: center; gap: 6px; margin: 26px 0; border: 1px solid var(--line); border-radius: 24px; background: var(--panel); padding: 22px; }
+.empty-icon span { flex: 1; background: var(--green); border-radius: 2px 2px 0 0; }
+.empty-icon span:nth-child(1) { height: 38%; opacity: .45; }
+.empty-icon span:nth-child(2) { height: 68%; opacity: .7; }
+.empty-icon span:nth-child(3) { height: 100%; }
+.empty-state h2 { margin: 0; font-size: clamp(24px, 3vw, 38px); letter-spacing: -.04em; }
+.empty-state p { max-width: 590px; margin: 14px 0 24px; color: var(--muted); font-size: 14px; line-height: 1.7; }
+.foundation-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.foundation-tags span { border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.45); padding: 8px 12px; font: 500 9px/1 var(--font-mono), monospace; letter-spacing: .06em; text-transform: uppercase; }
+
+@media (max-width: 760px) {
+  .control-room { grid-template-columns: 1fr; }
+  .sidebar { min-height: auto; padding: 18px; }
+  .sidebar nav { display: none; }
+  .sidebar-foot { margin: 18px 0 0; padding-top: 14px; }
+  .workspace { padding: 22px 18px; }
+  .topbar { align-items: flex-start; gap: 20px; }
+  .environment { display: none; }
+  .empty-state { min-height: 65vh; padding-inline: 0; }
+}
