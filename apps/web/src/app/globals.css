@@ -175,6 +175,18 @@ h1 { margin: 8px 0 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; lette
 .compact-list span { color: var(--muted); font: 400 8px/1 var(--font-mono), monospace; text-transform: capitalize; }
 .compact-list strong { font-size: 11px; text-transform: capitalize; }
 .padded { padding: 20px; }
+.action-feedback { margin-bottom: 12px; border: 1px solid #a9c4ae; border-radius: 9px; background: #dce9df; color: var(--green); padding: 12px 15px; font-size: 11px; }
+.action-feedback.error { border-color: #d9aaa2; background: #f2ddd8; color: #8c382f; }
+.action-panel { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-top: 12px; padding: 18px 20px; border: 1px solid #cdd5b4; border-radius: 14px; background: #f1f5dd; }
+.action-panel h3 { margin: 5px 0 3px; font-size: 14px; }
+.action-panel p { margin: 0; color: var(--muted); font-size: 10px; }
+.action-panel button, .review-form button { border: 0; border-radius: 8px; background: var(--green); color: white; padding: 10px 13px; font-size: 10px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.review-form { display: grid; gap: 9px; padding: 15px 0; border-bottom: 1px solid var(--line); }
+.review-form input, .review-form textarea { width: 100%; border: 1px solid var(--line); border-radius: 7px; background: white; padding: 9px 10px; color: var(--ink); font: 500 10px/1.4 var(--font-sans), sans-serif; }
+.review-form textarea { min-height: 66px; resize: vertical; }
+.review-form > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.review-form button.secondary { border: 1px solid var(--line); background: transparent; color: var(--ink); }
+.compact-list small { color: var(--muted); font-size: 9px; }
 
 .empty-state {
   min-height: calc(100vh - 160px); display: flex; flex-direction: column;
@@ -209,6 +221,7 @@ h1 { margin: 8px 0 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; lette
   .detail-hero { align-items: flex-start; flex-direction: column; gap: 24px; }
   .hero-risk { text-align: left; }
   .detail-grid { grid-template-columns: 1fr; }
+  .action-panel { align-items: flex-start; flex-direction: column; }
   .empty-state { min-height: 65vh; padding-inline: 0; }
 }
 

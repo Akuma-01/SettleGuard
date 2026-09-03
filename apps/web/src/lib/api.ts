@@ -88,6 +88,23 @@ async function apiResponse<T>(path: string): Promise<{ status: number; data: T |
   }
 }
 
+export async function postApi(path: string, body?: unknown): Promise<{ ok: boolean; message: string }> {
+  try {
+    const response = await fetch(`${apiBaseUrl}${path}`, {
+      method: "POST",
+      headers: body === undefined ? undefined : { "content-type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      cache: "no-store",
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (response.ok) return { ok: true, message: "Action completed successfully." };
+    const payload = await response.json() as { error?: { message?: string } };
+    return { ok: false, message: payload.error?.message ?? `API request failed with status ${response.status}.` };
+  } catch {
+    return { ok: false, message: "The API could not be reached." };
+  }
+}
+
 export async function getApiHealth(): Promise<ApiHealth | null> {
   try {
     const response = await fetch(`${apiBaseUrl}/health`, {
