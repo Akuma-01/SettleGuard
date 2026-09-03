@@ -1,5 +1,6 @@
 import { ControlRoomShell } from "@/components/control-room-shell";
 import { getRunDashboard, type DashboardResult } from "@/lib/api";
+import { runDemoAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -61,13 +62,14 @@ function Dashboard({ result }: { result: Extract<DashboardResult, { status: "rea
   );
 }
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ runId?: string }> }) {
-  const { runId } = await searchParams;
+export default async function Home({ searchParams }: { searchParams: Promise<{ runId?: string; notice?: string; error?: string }> }) {
+  const { runId, notice, error } = await searchParams;
   const parsedRunId = runId && /^[1-9]\d*$/.test(runId) && Number.isSafeInteger(Number(runId)) ? Number(runId) : null;
   const result = parsedRunId ? await getRunDashboard(parsedRunId) : null;
 
   return (
-    <ControlRoomShell active="Overview" eyebrow="SETTLEMENT OPERATIONS / OVERVIEW" title="Reconciliation control room" actions={<form className="run-selector"><label htmlFor="runId">Run ID</label><input id="runId" name="runId" inputMode="numeric" pattern="[1-9][0-9]*" defaultValue={parsedRunId ?? ""} placeholder="e.g. 1" required /><button type="submit">Load run</button></form>}>
+    <ControlRoomShell active="Overview" eyebrow="SETTLEMENT OPERATIONS / OVERVIEW" title="Reconciliation control room" actions={<div className="dashboard-actions"><form action={runDemoAction}><button className="demo-button" type="submit">Run demo</button></form><form className="run-selector"><label htmlFor="runId">Run ID</label><input id="runId" name="runId" inputMode="numeric" pattern="[1-9][0-9]*" defaultValue={parsedRunId ?? ""} placeholder="e.g. 1" required /><button type="submit">Load run</button></form></div>}>
+        {(notice || error) && <div className={error ? "action-feedback error dashboard-feedback" : "action-feedback dashboard-feedback"}>{error ?? notice}</div>}
         {result?.status === "ready" ? <Dashboard result={result} /> : <EmptyDashboard result={result} />}
     </ControlRoomShell>
   );

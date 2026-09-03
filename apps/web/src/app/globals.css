@@ -71,6 +71,10 @@ h1 { margin: 8px 0 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; lette
 .environment span { width: 6px; height: 6px; border-radius: 50%; background: #e3a43d; }
 
 .run-selector { display: flex; align-items: center; gap: 8px; }
+.dashboard-actions { display: flex; align-items: center; gap: 10px; }
+.dashboard-actions form { margin: 0; }
+.demo-button { height: 38px; border: 1px solid var(--green); border-radius: 8px; background: var(--signal); color: var(--green); padding: 0 15px; font-size: 11px; font-weight: 750; cursor: pointer; }
+.dashboard-feedback { margin: 18px 0 -6px; }
 .run-selector label { font: 500 10px/1 var(--font-mono), monospace; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
 .run-selector input { width: 84px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 11px; color: var(--ink); font: 500 12px/1 var(--font-mono), monospace; outline: none; }
 .run-selector input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(19,78,58,.1); }
@@ -211,6 +215,8 @@ h1 { margin: 8px 0 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; lette
   .topbar { align-items: flex-start; gap: 20px; flex-direction: column; }
   .environment { display: none; }
   .run-selector { width: 100%; }
+  .dashboard-actions { width: 100%; align-items: stretch; flex-direction: column; }
+  .dashboard-actions form:first-child, .demo-button { width: 100%; }
   .run-selector input { flex: 1; }
   .metric-grid, .dashboard-lower { grid-template-columns: 1fr; }
   .filter-bar { align-items: stretch; flex-direction: column; }
