@@ -1,7 +1,7 @@
-import { and, count, desc, eq, inArray, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, or, type SQL } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import { db } from "../../db/client.js";
-import { exceptions, investigations } from "../../db/schema.js";
+import { agentEvents, auditLogs, batches, exceptions, investigations, merchants, reconciliationRuns, reviewCases } from "../../db/schema.js";
 import type { ApiErrorBody } from "../app.js";
 import { parsePositiveId } from "../params.js";
 
@@ -24,6 +24,65 @@ function parseNonNegativeInteger(value: string | undefined, fallback: number): n
 }
 
 export async function registerExceptionRoutes(app: FastifyInstance): Promise<void> {
+  app.get<{ Params: { id: string } }>("/api/exceptions/:id", async (request, reply) => {
+    const exceptionId = parsePositiveId(request.params.id);
+    if (exceptionId === null) {
+      return reply.code(400).send({ error: { code: "INVALID_EXCEPTION_ID", message: "Exception id must be a positive integer" } } satisfies ApiErrorBody);
+    }
+
+    const [context] = await db.select({
+      exception: exceptions,
+      run: {
+        id: reconciliationRuns.id,
+        status: reconciliationRuns.status,
+        batchId: reconciliationRuns.batchId,
+      },
+      batch: {
+        id: batches.id,
+        name: batches.name,
+        merchantId: batches.merchantId,
+        merchantName: merchants.name,
+      },
+    }).from(exceptions)
+      .innerJoin(reconciliationRuns, eq(exceptions.runId, reconciliationRuns.id))
+      .innerJoin(batches, eq(reconciliationRuns.batchId, batches.id))
+      .innerJoin(merchants, eq(batches.merchantId, merchants.id))
+      .where(eq(exceptions.id, exceptionId));
+    if (!context) {
+      return reply.code(404).send({ error: { code: "EXCEPTION_NOT_FOUND", message: `No exception with id ${exceptionId}` } } satisfies ApiErrorBody);
+    }
+
+    const [investigationRows, reviews] = await Promise.all([
+      db.select().from(investigations).where(eq(investigations.exceptionId, exceptionId)).orderBy(desc(investigations.id)),
+      db.select().from(reviewCases).where(eq(reviewCases.exceptionId, exceptionId)).orderBy(desc(reviewCases.id)),
+    ]);
+    const investigationIds = investigationRows.map((row) => row.id);
+    const events = investigationIds.length > 0
+      ? await db.select().from(agentEvents).where(inArray(agentEvents.investigationId, investigationIds)).orderBy(asc(agentEvents.investigationId), asc(agentEvents.sequenceNumber))
+      : [];
+    const eventsByInvestigation = new Map<number, typeof events>();
+    for (const event of events) {
+      const existing = eventsByInvestigation.get(event.investigationId) ?? [];
+      existing.push(event);
+      eventsByInvestigation.set(event.investigationId, existing);
+    }
+
+    const auditScopes: SQL[] = [and(eq(auditLogs.entityType, "exception"), eq(auditLogs.entityId, exceptionId))!];
+    if (investigationIds.length > 0) auditScopes.push(and(eq(auditLogs.entityType, "investigation"), inArray(auditLogs.entityId, investigationIds))!);
+    if (reviews.length > 0) auditScopes.push(and(eq(auditLogs.entityType, "review_case"), inArray(auditLogs.entityId, reviews.map((row) => row.id)))!);
+    const audits = await db.select().from(auditLogs).where(or(...auditScopes)).orderBy(asc(auditLogs.createdAt), asc(auditLogs.id));
+
+    return {
+      ...context,
+      investigations: investigationRows.map((investigation) => ({
+        investigation,
+        events: eventsByInvestigation.get(investigation.id) ?? [],
+      })),
+      reviewCases: reviews,
+      auditTrail: audits,
+    };
+  });
+
   app.get<{ Querystring: ExceptionListQuery }>("/api/exceptions", async (request, reply) => {
     const runId = request.query.runId === undefined ? undefined : parsePositiveId(request.query.runId);
     const limit = parseNonNegativeInteger(request.query.limit, 100);
