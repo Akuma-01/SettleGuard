@@ -62,6 +62,20 @@ export interface ExceptionList {
   pagination: { total: number; limit: number; offset: number };
 }
 
+export interface ExceptionDetail {
+  exception: ExceptionRecord & { primaryRecordType: string | null; primaryRecordId: number | null; deterministicEvidenceJson: unknown; resolvedAt: string | null };
+  run: { id: number; status: string; batchId: number };
+  batch: { id: number; name: string; merchantId: number; merchantName: string };
+  investigations: Array<{
+    investigation: InvestigationSummary & { model: string | null; promptVersion: string | null; requiresHumanApproval: boolean; structuredOutputJson: unknown; completedAt: string | null };
+    events: Array<{ id: number; sequenceNumber: number; eventType: string; toolName: string | null; toolInputJson: unknown; toolOutputJson: unknown; createdAt: string }>;
+  }>;
+  reviewCases: Array<{ id: number; status: string; proposedAction: string | null; reviewerDecision: string | null; reviewerNote: string | null; createdAt: string; reviewedAt: string | null }>;
+  auditTrail: Array<{ id: number; actorType: string; action: string; entityType: string; entityId: number | null; createdAt: string }>;
+}
+
+export type ExceptionDetailResult = { status: "ready"; data: ExceptionDetail } | { status: "not_found" } | { status: "unavailable" };
+
 async function apiResponse<T>(path: string): Promise<{ status: number; data: T | null }> {
   try {
     const response = await fetch(`${apiBaseUrl}${path}`, {
@@ -101,4 +115,10 @@ export async function getRunDashboard(runId: number): Promise<DashboardResult> {
 export async function getExceptions(query: URLSearchParams): Promise<ExceptionList | null> {
   const response = await apiResponse<ExceptionList>(`/api/exceptions?${query.toString()}`);
   return response.data;
+}
+
+export async function getExceptionDetail(exceptionId: number): Promise<ExceptionDetailResult> {
+  const response = await apiResponse<ExceptionDetail>(`/api/exceptions/${exceptionId}`);
+  if (response.status === 404) return { status: "not_found" };
+  return response.data ? { status: "ready", data: response.data } : { status: "unavailable" };
 }
