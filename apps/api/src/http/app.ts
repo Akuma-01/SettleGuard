@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
+import multipart from "@fastify/multipart";
 import { registerBatchRoutes } from "./routes/batches.js";
 import { registerRunRoutes } from "./routes/runs.js";
 import { registerExceptionRoutes } from "./routes/exceptions.js";
@@ -38,6 +39,14 @@ export function buildApp(
     service: "settleguard-api",
     version: "0.1.0",
   }));
+  void app.register(multipart, {
+    limits: {
+      fields: 1,
+      files: 5,
+      fileSize: 5 * 1024 * 1024,
+      parts: 6,
+    },
+  });
   void app.register(registerBatchRoutes, dependencies);
   void app.register(registerRunRoutes);
   void app.register(registerExceptionRoutes, dependencies);
