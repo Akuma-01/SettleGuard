@@ -6,13 +6,11 @@ and reports measured match/exception accuracy with an honest unresolved list.
 
 Built for the Razorpay AI Buildathon, Track 04 — AI Finance Controller.
 
-**Status: Day 8 in progress — Phases 0-3 and Phase 4's bounded agent core
-are built; the multi-scenario regression scorer is now in place.** The full loop — load exception → agent investigates →
-policy decides → evidence page displays it — is wired end to end on a
-tiny dataset. Every piece except the live model call is tested against
-real Postgres or scripted fake models (no Anthropic API key available
-real Postgres or scripted fake models; the CLI itself fails clearly and
-safely without an API key, ready for your own key.
+**Status: Phases 1-6 are complete.** CSV ingestion, deterministic
+reconciliation, benchmark scoring, bounded AI investigation, policy-controlled
+resolution, human review, audit history, and the complete HTTP API are wired end
+to end. The test suite uses real PostgreSQL for integration paths and scripted
+models where an Anthropic call is not the behavior under test.
 
 ## Run it
 
@@ -23,8 +21,9 @@ npm run proof && npm run generate:demo && npm run generate:benchmark && npm run 
 cd apps/api && npm install
 cp .env.example .env       # see apps/api/README.md for Postgres + Anthropic setup
 npm run db:push
-npm test                    # 117 tests
+npm test                    # 219 tests
 npm run benchmark           # 100% precision/recall, unattended
+npm run dev                 # HTTP API on http://localhost:4000
 
 npm run ingest -- ../../datasets/agent-slice agent-slice-001
 npm run reconcile -- <batchId>       # printed by ingest above
@@ -43,39 +42,37 @@ npm run agent:regression -- <runId>   # six real exception classes — needs ANT
   unattended command, 100% precision/recall at both demo and benchmark
   scale (Day 5).
 - **Phase 4** (`apps/api/src/agent/`) — the agent vertical slice plus
-  Day 7's tool layer so far: 10 input-validated evidence tools and 4
+  10 input-validated evidence tools and 4
   deterministic analysis tools, plus 2 authorization-gated workflow
   actions for review cases and adjustment proposals,
   a tool-calling loop with an exact 8-call budget and isolated provider/tool
   failures, record-grounded evidence citations, Zod-validated structured output with one repair retry
-  before an honest `AI_ERROR`, a minimal policy stub, and a plain
-  static HTML evidence page. Direct linking, reclassification, and
-  resolution remain gated on Phase 5's real policy engine.
+  before an honest `AI_ERROR`, and a static HTML evidence page.
+- **Phase 5** (`apps/api/src/policy/`) — deterministic authorization gates,
+  safe auto-resolution, human-review decisions, rerun assessment, controlled
+  link actions, and immutable audit entries.
+- **Phase 6** (`apps/api/src/http/`) — the complete Fastify API for loading or
+  uploading batches, reconciliation, metrics, exceptions, investigation,
+  review decisions, and audit history.
 
 ## What's next
 
-Day 8: run the new live six-class regression command with an Anthropic
-API key, preserve the measured result, and refine only where that
-evaluation exposes a weakness.
-`npm run benchmark` still needs
-to pass 100%/100% after — the agent is additive, never a replacement
-for the deterministic core underneath it. Full 14-day pace is in the
-architecture doc.
+Phase 7 builds the control-room frontend on the existing API: dashboard,
+exception list, exception detail, and human-review actions. The deterministic
+benchmark remains the regression gate underneath the agent and UI.
 
 ## Structure so far
 
 ```
 settleguard/
 ├── apps/api/
-│   ├── src/{db,ingestion,reconciliation,benchmark,agent,cli}/
+│   ├── src/{db,ingestion,reconciliation,benchmark,agent,policy,http,cli}/
 │   └── tests/
 ├── scripts/
 │   ├── phase1-step1-proof.ts
 │   ├── generate-dataset.ts
 │   └── generator/
-├── datasets/{demo,benchmark,agent-slice}/
-├── docs/SCOPE_AND_DECISIONS.md
+└── datasets/{demo,benchmark,agent-slice}/
 ```
 
-`apps/web` and `packages/` get created when their phases start (the
-frontend in Phase 7) — not before, on purpose.
+`apps/web` is the next addition for Phase 7.
