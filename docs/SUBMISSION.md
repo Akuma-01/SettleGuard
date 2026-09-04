@@ -64,6 +64,8 @@ Fresh local benchmark, generated with `cd apps/api && npm run benchmark`:
 The benchmark compares detected exceptions with generator-produced ground truth;
 it does not treat UI fixtures or model output as labels. Live-agent evaluation is
 kept separate so deterministic accuracy is never confused with model quality.
+The full build, test, browser, and production smoke evidence is recorded in
+[Release verification](RELEASE_VERIFICATION.md).
 
 ## Technology
 

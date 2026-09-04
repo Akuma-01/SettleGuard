@@ -21,4 +21,5 @@
   trend charts. These are intentionally outside the P0 buildathon workflow.
 - Container definitions are provided, but this WSL environment did not have
   Docker available for an actual image build; native production builds and
-  compiled startup were verified instead.
+  compiled standalone startup were verified instead. The exact checks are in
+  [Release verification](RELEASE_VERIFICATION.md).
