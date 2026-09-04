@@ -16,7 +16,7 @@ export function configuredAgentProvider(): AgentProvider {
 
 export function configuredAgentModel(provider = configuredAgentProvider()): string {
   const configured = process.env.SETTLEGUARD_AGENT_MODEL?.trim();
-  return configured || (provider === "gemini" ? "gemini-2.5-flash" : "claude-sonnet-5");
+  return configured || (provider === "gemini" ? "gemini-3.6-flash" : "claude-sonnet-5");
 }
 
 export function assertAnthropicConfigured(): void {
@@ -58,6 +58,7 @@ interface GeminiPart {
   text?: string;
   functionCall?: { name?: string; args?: Record<string, unknown> };
   functionResponse?: { name: string; response: Record<string, unknown> };
+  thoughtSignature?: string;
 }
 
 interface GeminiResponse {
@@ -84,7 +85,7 @@ function geminiContents(messages: ModelMessage[]): Array<{ role: "user" | "model
       if (block.type === "tool_use") {
         if (!block.id || !block.name) throw new Error("Cannot send a malformed tool call to Gemini.");
         toolNamesById.set(block.id, block.name);
-        return { functionCall: { name: block.name, args: block.input ?? {} } };
+        return { functionCall: { name: block.name, args: block.input ?? {} }, thoughtSignature: block.thoughtSignature };
       }
       return { text: block.text ?? "" };
     });
@@ -95,7 +96,7 @@ function geminiContents(messages: ModelMessage[]): Array<{ role: "user" | "model
 export const geminiCaller: ModelCaller = async ({ system, messages, tools }) => {
   assertGeminiConfigured();
   const model = configuredAgentModel("gemini");
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+  const request = {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY! },
     body: JSON.stringify({
@@ -108,8 +109,21 @@ export const geminiCaller: ModelCaller = async ({ system, messages, tools }) => 
       }) }],
       generationConfig: { maxOutputTokens: 2048 },
     }),
-  });
-  const payload = await response.json() as GeminiResponse;
+  };
+  let response!: Response;
+  let payload!: GeminiResponse;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, request);
+    payload = await response.json() as GeminiResponse;
+    if (response.status !== 429 || attempt === 4) break;
+    const retryHeaderValue = response.headers.get("retry-after");
+    const retryHeader = retryHeaderValue === null ? Number.NaN : Number(retryHeaderValue);
+    const retryMessage = payload.error?.message?.match(/retry in ([\d.]+)s/i)?.[1];
+    const delayMs = Number.isFinite(retryHeader) && retryHeader >= 0
+      ? retryHeader * 1_000
+      : Math.max(2_000, Number(retryMessage ?? 0) * 1_000, 2 ** attempt * 2_000);
+    await new Promise((resolve) => setTimeout(resolve, Math.min(delayMs, 30_000)));
+  }
   if (!response.ok) throw new Error(`Gemini API request failed (${response.status}): ${payload.error?.message ?? response.statusText}`);
   const parts = payload.candidates?.[0]?.content?.parts ?? [];
   const content: ContentBlock[] = [];
@@ -117,7 +131,13 @@ export const geminiCaller: ModelCaller = async ({ system, messages, tools }) => 
     if (typeof part.text === "string") content.push({ type: "text", text: part.text });
     else if (part.functionCall?.name) {
       geminiToolCallSequence += 1;
-      content.push({ type: "tool_use", id: `gemini-tool-${geminiToolCallSequence}`, name: part.functionCall.name, input: part.functionCall.args ?? {} });
+      content.push({
+        type: "tool_use",
+        id: `gemini-tool-${geminiToolCallSequence}`,
+        name: part.functionCall.name,
+        input: part.functionCall.args ?? {},
+        thoughtSignature: part.thoughtSignature,
+      });
     }
   }
   return { content, stop_reason: content.some((block) => block.type === "tool_use") ? "tool_use" : "end_turn" };

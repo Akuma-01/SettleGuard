@@ -26,7 +26,7 @@ describe("agent provider configuration", () => {
     process.env.SETTLEGUARD_AGENT_PROVIDER = "gemini";
     process.env.SETTLEGUARD_AGENT_MODEL = "";
     expect(configuredAgentProvider()).toBe("gemini");
-    expect(configuredAgentModel()).toBe("gemini-2.5-flash");
+    expect(configuredAgentModel()).toBe("gemini-3.6-flash");
   });
 
   it("rejects an unsupported provider", () => {
@@ -40,7 +40,7 @@ describe("geminiCaller", () => {
     process.env.GEMINI_API_KEY = "test-key";
     process.env.SETTLEGUARD_AGENT_MODEL = "gemini-2.5-flash";
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      candidates: [{ content: { parts: [{ functionCall: { name: "get_exception", args: { exceptionId: 42 } } }] } }],
+      candidates: [{ content: { parts: [{ functionCall: { name: "get_exception", args: { exceptionId: 42 } }, thoughtSignature: "opaque-signature" }] } }],
     }), { status: 200, headers: { "Content-Type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -48,7 +48,7 @@ describe("geminiCaller", () => {
 
     expect(response).toMatchObject({
       stop_reason: "tool_use",
-      content: [{ type: "tool_use", name: "get_exception", input: { exceptionId: 42 } }],
+      content: [{ type: "tool_use", name: "get_exception", input: { exceptionId: 42 }, thoughtSignature: "opaque-signature" }],
     });
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toContain("gemini-2.5-flash:generateContent");
@@ -66,7 +66,7 @@ describe("geminiCaller", () => {
     process.env.GEMINI_API_KEY = "test-key";
     const messages: ModelMessage[] = [
       { role: "user", content: "Investigate 42" },
-      { role: "assistant", content: [{ type: "tool_use", id: "call-1", name: "get_exception", input: { exceptionId: 42 } }] },
+      { role: "assistant", content: [{ type: "tool_use", id: "call-1", name: "get_exception", input: { exceptionId: 42 }, thoughtSignature: "opaque-signature" }] },
       { role: "user", content: [{ type: "tool_result", tool_use_id: "call-1", content: "{\"id\":42}" }] },
     ];
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
@@ -78,7 +78,22 @@ describe("geminiCaller", () => {
 
     expect(response).toEqual({ content: [{ type: "text", text: "{\"exceptionId\":42}" }], stop_reason: "end_turn" });
     const body = JSON.parse(fetchMock.mock.calls[0]![1].body);
+    expect(body.contents[1].parts[0].thoughtSignature).toBe("opaque-signature");
     expect(body.contents[2]).toEqual({ role: "user", parts: [{ functionResponse: { name: "get_exception", response: { result: { id: 42 } } } }] });
+  });
+
+  it("retries a free-tier rate limit response", async () => {
+    process.env.GEMINI_API_KEY = "test-key";
+    const rateLimited = new Response(JSON.stringify({ error: { message: "Please retry in 0s." } }), {
+      status: 429, headers: { "Content-Type": "application/json", "retry-after": "0" },
+    });
+    const success = new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "done" }] } }] }), {
+      status: 200, headers: { "Content-Type": "application/json" },
+    });
+    const fetchMock = vi.fn().mockResolvedValueOnce(rateLimited).mockResolvedValueOnce(success);
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(geminiCaller({ system: "", messages: [], tools: [] })).resolves.toMatchObject({ stop_reason: "end_turn" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("fails before the network call when the Gemini key is absent", async () => {

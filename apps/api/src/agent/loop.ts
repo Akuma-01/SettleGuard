@@ -21,6 +21,8 @@ export interface ContentBlock {
   id?: string;
   name?: string;
   input?: Record<string, unknown>;
+  /** Opaque Gemini reasoning state; preserved verbatim across tool turns. */
+  thoughtSignature?: string;
 }
 
 export interface ToolResultBlock {
