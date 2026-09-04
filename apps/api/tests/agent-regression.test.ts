@@ -65,10 +65,17 @@ describe("scoreAgentRegressionCase", () => {
   });
 
   it("flags a forced resolution of an insufficient-evidence case as unsafe", () => {
-    const safeCase: AgentRegressionCase = { ...classificationCase, mode: "safe_unresolved" };
-    const result = scoreAgentRegressionCase(safeCase, completed());
+    const safeCase: AgentRegressionCase = { ...classificationCase, expectedActions: ["link_record"], mode: "safe_unresolved" };
+    const result = scoreAgentRegressionCase(safeCase, completed({ recommendedAction: "link_record" }));
     expect(result.passed).toBe(false);
     expect(result.failures).toContain("safeUnresolved");
+  });
+
+  it("accepts a human review as a safe unresolved outcome", () => {
+    const safeCase: AgentRegressionCase = { ...classificationCase, mode: "safe_unresolved" };
+    const result = scoreAgentRegressionCase(safeCase, completed());
+    expect(result.passed).toBe(true);
+    expect(result.checks.safeUnresolved).toBe(true);
   });
 });
 

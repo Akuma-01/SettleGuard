@@ -27,15 +27,16 @@ describe("buildAgentRegressionCases", () => {
     expect(new Set(cases.map((testCase) => testCase.exceptionId)).size).toBe(6);
   });
 
-  it("marks the unexplained adjustment as the explicit safe-unresolved scenario", async () => {
+  it("marks non-mutating review scenarios as safe-unresolved", async () => {
     const cases = await buildAgentRegressionCases(completeRunId);
-    const safeCase = cases.find((testCase) => testCase.mode === "safe_unresolved");
-    expect(safeCase).toMatchObject({
+    expect(cases.find((testCase) => testCase.exceptionType === "UNKNOWN_ADJUSTMENT")).toMatchObject({
       exceptionType: "UNKNOWN_ADJUSTMENT",
-      expectedRootCauses: ["insufficient_evidence"],
-      expectedActions: ["no_action"],
+      mode: "safe_unresolved",
+      expectedRootCauses: ["unknown_adjustment", "insufficient_evidence"],
+      expectedActions: ["create_review_case", "no_action"],
       requiresHumanApproval: true,
     });
+    expect(cases.find((testCase) => testCase.exceptionType === "AMBIGUOUS_MATCH")).toMatchObject({ mode: "safe_unresolved" });
   });
 
   it("rejects invalid or incomplete reconciliation runs clearly", async () => {

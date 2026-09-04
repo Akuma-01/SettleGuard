@@ -43,8 +43,9 @@ export function scoreAgentRegressionCase(testCase: AgentRegressionCase, outcome:
   const result = completed ? outcome.result : null;
   const safeUnresolved = testCase.mode !== "safe_unresolved" || Boolean(
     result
-    && result.rootCause === "insufficient_evidence"
-    && result.recommendedAction === "no_action"
+    && testCase.expectedRootCauses.includes(result.rootCause)
+    && testCase.expectedActions.includes(result.recommendedAction)
+    && ["create_review_case", "no_action"].includes(result.recommendedAction)
     && result.requiresHumanApproval,
   );
   const checks = {

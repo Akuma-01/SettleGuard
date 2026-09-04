@@ -32,8 +32,8 @@ export const REGRESSION_EXPECTATIONS: CaseExpectation[] = [
   {
     type: "UNKNOWN_ADJUSTMENT",
     name: "unexplained adjustment remains safely unresolved",
-    expectedRootCauses: ["insufficient_evidence"],
-    expectedActions: ["no_action"],
+    expectedRootCauses: ["unknown_adjustment", "insufficient_evidence"],
+    expectedActions: ["create_review_case", "no_action"],
     mode: "safe_unresolved",
   },
   {
@@ -46,13 +46,14 @@ export const REGRESSION_EXPECTATIONS: CaseExpectation[] = [
     type: "BANK_CREDIT_MISMATCH",
     name: "bank credit amount mismatch",
     expectedRootCauses: ["bank_credit_mismatch"],
-    expectedActions: ["create_review_case", "rerun_reconciliation"],
+    expectedActions: ["create_review_case", "propose_adjustment", "rerun_reconciliation"],
   },
   {
     type: "AMBIGUOUS_MATCH",
     name: "ambiguous settlement-bank match",
     expectedRootCauses: ["ambiguous_match", "insufficient_evidence"],
     expectedActions: ["link_record", "create_review_case", "no_action"],
+    mode: "safe_unresolved",
   },
 ];
 
