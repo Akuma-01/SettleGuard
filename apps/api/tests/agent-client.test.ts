@@ -96,6 +96,20 @@ describe("geminiCaller", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("retries a transient provider-capacity response", async () => {
+    process.env.GEMINI_API_KEY = "test-key";
+    const unavailable = new Response(JSON.stringify({ error: { message: "High demand" } }), {
+      status: 503, headers: { "Content-Type": "application/json", "retry-after": "0" },
+    });
+    const success = new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "done" }] } }] }), {
+      status: 200, headers: { "Content-Type": "application/json" },
+    });
+    const fetchMock = vi.fn().mockResolvedValueOnce(unavailable).mockResolvedValueOnce(success);
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(geminiCaller({ system: "", messages: [], tools: [] })).resolves.toMatchObject({ stop_reason: "end_turn" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("fails before the network call when the Gemini key is absent", async () => {
     delete process.env.GEMINI_API_KEY;
     const fetchMock = vi.fn();

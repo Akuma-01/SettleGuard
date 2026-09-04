@@ -115,7 +115,8 @@ export const geminiCaller: ModelCaller = async ({ system, messages, tools }) => 
   for (let attempt = 0; attempt < 5; attempt++) {
     response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, request);
     payload = await response.json() as GeminiResponse;
-    if (response.status !== 429 || attempt === 4) break;
+    const transientStatus = response.status === 429 || [500, 502, 503, 504].includes(response.status);
+    if (!transientStatus || attempt === 4) break;
     const retryHeaderValue = response.headers.get("retry-after");
     const retryHeader = retryHeaderValue === null ? Number.NaN : Number(retryHeaderValue);
     const retryMessage = payload.error?.message?.match(/retry in ([\d.]+)s/i)?.[1];
