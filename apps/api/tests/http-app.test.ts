@@ -16,6 +16,12 @@ describe("HTTP application", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.headers["content-type"]).toContain("application/json");
+    expect(response.headers).toMatchObject({
+      "cache-control": "no-store",
+      "referrer-policy": "no-referrer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+    });
     expect(response.json()).toEqual({ status: "ok", service: "settleguard-api", version: "0.1.0" });
   });
 

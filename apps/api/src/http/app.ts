@@ -35,6 +35,14 @@ export function buildApp(
     demoDatasetDirectory: dependencyOverrides.demoDatasetDirectory ?? fileURLToPath(new URL("../../../../datasets/demo", import.meta.url)),
   };
 
+  app.addHook("onSend", async (_request, reply, payload) => {
+    reply.header("Cache-Control", "no-store");
+    reply.header("Referrer-Policy", "no-referrer");
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("X-Frame-Options", "DENY");
+    return payload;
+  });
+
   app.get("/health", async (_request, reply) => {
     try {
       await pool.query("select 1");

@@ -26,7 +26,7 @@ services:
       PORT: 4000
     command: ["sh", "-c", "npm run db:push && npm start"]
     ports:
-      - "4000:4000"
+      - "127.0.0.1:4000:4000"
     depends_on:
       postgres:
         condition: service_healthy

@@ -8,8 +8,10 @@
   progress events.
 - Uploaded files must use the five expected CSV filenames and are limited to
   5 MB each. There is no processor-specific mapping UI.
-- Investigation requires an Anthropic API key and configured supported model.
-  Provider outages produce explicit failures rather than fallback conclusions.
+- Investigation requires an API key and supported model for the selected Anthropic
+  or Gemini provider. Quota and provider outages are labeled explicitly; the UI
+  preserves deterministic evidence and routes the case to human review without
+  fabricating an AI conclusion.
 - The deterministic benchmark measures matching and exception detection.
   Live-model resolution accuracy is not claimed by that benchmark; the agent
   regression suite evaluates investigation/policy behavior separately.
