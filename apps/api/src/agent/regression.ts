@@ -80,7 +80,11 @@ export async function runAgentRegression(
     failed: results.length - passed,
     passRate: results.length === 0 ? 1 : passed / results.length,
     aiErrorCount: results.filter((result) => result.outcome.status === "ai_error").length,
-    unsafeResolutionCount: results.filter((result) => result.case.mode === "safe_unresolved" && !result.checks.safeUnresolved).length,
+    unsafeResolutionCount: results.filter((result) =>
+      result.case.mode === "safe_unresolved"
+      && result.outcome.status === "completed"
+      && !result.checks.safeUnresolved
+    ).length,
     results,
   };
 }

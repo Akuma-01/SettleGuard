@@ -6,7 +6,7 @@
 import "dotenv/config";
 import path from "node:path";
 import { investigateException } from "../agent/investigate.js";
-import { anthropicCaller, assertAnthropicConfigured } from "../agent/client.js";
+import { assertAgentProviderConfigured, configuredAgentProvider, configuredModelCaller } from "../agent/client.js";
 import { pool } from "../db/client.js";
 
 async function main() {
@@ -16,11 +16,11 @@ async function main() {
     process.exit(1);
   }
   const exceptionId = parseInt(exceptionIdArg, 10);
-  assertAnthropicConfigured();
+  assertAgentProviderConfigured();
   const outputPath = path.resolve(process.cwd(), `investigation-${exceptionId}.html`);
 
-  console.log(`Investigating exception ${exceptionId}...`);
-  const summary = await investigateException(exceptionId, anthropicCaller, outputPath);
+  console.log(`Investigating exception ${exceptionId} with ${configuredAgentProvider()}...`);
+  const summary = await investigateException(exceptionId, configuredModelCaller, outputPath);
 
   console.log("=".repeat(64));
   console.log(`Investigation ${summary.investigationId} — ${summary.outcomeStatus}`);

@@ -1,46 +1,123 @@
-/**
- * SettleGuard — Phase 4: the real model caller.
- * The only file in src/agent/ that imports the Anthropic SDK — every
- * other piece (loop.ts, tools.ts, schema.ts) is testable without it.
- * Requires ANTHROPIC_API_KEY; fails loudly and immediately if unset
- * rather than making a doomed network call.
- */
+/** Provider adapters for SettleGuard's model-agnostic agent loop. */
 
 import Anthropic from "@anthropic-ai/sdk";
-import type { ModelCaller } from "./loop.js";
+import type { ContentBlock, ModelCaller, ModelMessage } from "./loop.js";
 
-const MODEL = process.env.SETTLEGUARD_AGENT_MODEL ?? "claude-sonnet-5";
+export type AgentProvider = "anthropic" | "gemini";
 
-let client: Anthropic | null = null;
-export function assertAnthropicConfigured(): void {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw new Error("ANTHROPIC_API_KEY is not set. Add it to apps/api/.env to run a real investigation.");
-  }
+let anthropicClient: Anthropic | null = null;
+let geminiToolCallSequence = 0;
+
+export function configuredAgentProvider(): AgentProvider {
+  const provider = (process.env.SETTLEGUARD_AGENT_PROVIDER ?? "anthropic").trim().toLowerCase();
+  if (provider === "anthropic" || provider === "gemini") return provider;
+  throw new Error(`Unsupported SETTLEGUARD_AGENT_PROVIDER "${provider}". Use anthropic or gemini.`);
 }
 
-function getClient(): Anthropic {
+export function configuredAgentModel(provider = configuredAgentProvider()): string {
+  const configured = process.env.SETTLEGUARD_AGENT_MODEL?.trim();
+  return configured || (provider === "gemini" ? "gemini-2.5-flash" : "claude-sonnet-5");
+}
+
+export function assertAnthropicConfigured(): void {
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not set. Add it to apps/api/.env to use the Anthropic provider.");
+}
+
+export function assertGeminiConfigured(): void {
+  if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not set. Add it to apps/api/.env to use the Gemini provider.");
+}
+
+export function assertAgentProviderConfigured(): void {
+  if (configuredAgentProvider() === "gemini") assertGeminiConfigured();
+  else assertAnthropicConfigured();
+}
+
+function getAnthropicClient(): Anthropic {
   assertAnthropicConfigured();
-  client ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  return client;
+  anthropicClient ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return anthropicClient;
 }
 
 export const anthropicCaller: ModelCaller = async ({ system, messages, tools }) => {
-  const response = await getClient().messages.create({
-    model: MODEL,
-    max_tokens: 2048,
-    system,
-    // The SDK's message/content types are broader than our minimal
-    // internal shapes but structurally compatible for what we send.
+  const response = await getAnthropicClient().messages.create({
+    model: configuredAgentModel("anthropic"), max_tokens: 2048, system,
     messages: messages as Anthropic.MessageParam[],
-    tools: tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
+    tools: tools.map((tool) => ({ name: tool.name, description: tool.description, input_schema: tool.input_schema })),
   });
-
   return {
     content: response.content.map((block) => {
       if (block.type === "text") return { type: "text" as const, text: block.text };
       if (block.type === "tool_use") return { type: "tool_use" as const, id: block.id, name: block.name, input: block.input as Record<string, unknown> };
-      return { type: "text" as const, text: "" }; // other block types not expected in this text+tool_use-only flow
+      return { type: "text" as const, text: "" };
     }),
     stop_reason: response.stop_reason ?? "end_turn",
   };
 };
+
+interface GeminiPart {
+  text?: string;
+  functionCall?: { name?: string; args?: Record<string, unknown> };
+  functionResponse?: { name: string; response: Record<string, unknown> };
+}
+
+interface GeminiResponse {
+  candidates?: Array<{ content?: { parts?: GeminiPart[] } }>;
+  error?: { message?: string };
+}
+
+function parseToolResult(content: string): unknown {
+  try { return JSON.parse(content); } catch { return content; }
+}
+
+function geminiContents(messages: ModelMessage[]): Array<{ role: "user" | "model"; parts: GeminiPart[] }> {
+  const toolNamesById = new Map<string, string>();
+  return messages.map((message) => {
+    if (typeof message.content === "string") {
+      return { role: message.role === "assistant" ? "model" : "user", parts: [{ text: message.content }] };
+    }
+    const parts = message.content.map((block): GeminiPart => {
+      if (block.type === "tool_result") {
+        const name = toolNamesById.get(block.tool_use_id);
+        if (!name) throw new Error(`Cannot map Gemini tool result ${block.tool_use_id} to a function name.`);
+        return { functionResponse: { name, response: { result: parseToolResult(block.content) } } };
+      }
+      if (block.type === "tool_use") {
+        if (!block.id || !block.name) throw new Error("Cannot send a malformed tool call to Gemini.");
+        toolNamesById.set(block.id, block.name);
+        return { functionCall: { name: block.name, args: block.input ?? {} } };
+      }
+      return { text: block.text ?? "" };
+    });
+    return { role: message.role === "assistant" ? "model" : "user", parts };
+  });
+}
+
+export const geminiCaller: ModelCaller = async ({ system, messages, tools }) => {
+  assertGeminiConfigured();
+  const model = configuredAgentModel("gemini");
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY! },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: geminiContents(messages),
+      tools: [{ functionDeclarations: tools.map((tool) => ({ name: tool.name, description: tool.description, parameters: tool.input_schema })) }],
+      generationConfig: { maxOutputTokens: 2048 },
+    }),
+  });
+  const payload = await response.json() as GeminiResponse;
+  if (!response.ok) throw new Error(`Gemini API request failed (${response.status}): ${payload.error?.message ?? response.statusText}`);
+  const parts = payload.candidates?.[0]?.content?.parts ?? [];
+  const content: ContentBlock[] = [];
+  for (const part of parts) {
+    if (typeof part.text === "string") content.push({ type: "text", text: part.text });
+    else if (part.functionCall?.name) {
+      geminiToolCallSequence += 1;
+      content.push({ type: "tool_use", id: `gemini-tool-${geminiToolCallSequence}`, name: part.functionCall.name, input: part.functionCall.args ?? {} });
+    }
+  }
+  return { content, stop_reason: content.some((block) => block.type === "tool_use") ? "tool_use" : "end_turn" };
+};
+
+export const configuredModelCaller: ModelCaller = async (params) =>
+  configuredAgentProvider() === "gemini" ? geminiCaller(params) : anthropicCaller(params);

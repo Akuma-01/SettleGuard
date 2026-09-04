@@ -83,11 +83,11 @@ The Next.js UI provides:
 Prerequisite: Docker with Compose.
 
 ```bash
-ANTHROPIC_API_KEY=your_key docker compose up --build
+GEMINI_API_KEY=your_key SETTLEGUARD_AGENT_PROVIDER=gemini docker compose up --build
 ```
 
 Open `http://localhost:3000`, select **Run demo**, open an exception, and inspect
-its evidence. Investigation requires the Anthropic key; deterministic ingestion,
+its evidence. Investigation requires a key for the selected Anthropic or Gemini provider; deterministic ingestion,
 reconciliation, metrics, exceptions, and audit browsing do not.
 
 ## Local development

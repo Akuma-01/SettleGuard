@@ -86,4 +86,10 @@ describe("runAgentRegression", () => {
     expect(summary.aiErrorCount).toBe(1);
     expect(summary.results[0]!.outcome).toMatchObject({ status: "ai_error", reason: expect.stringMatching(/network down/) });
   });
+
+  it("does not label a provider failure as an unsafe forced resolution", async () => {
+    const safeCase: AgentRegressionCase = { ...classificationCase, mode: "safe_unresolved" };
+    const summary = await runAgentRegression([safeCase], async () => ({ status: "ai_error", reason: "quota exceeded", rawResponse: "" }));
+    expect(summary).toMatchObject({ aiErrorCount: 1, unsafeResolutionCount: 0 });
+  });
 });

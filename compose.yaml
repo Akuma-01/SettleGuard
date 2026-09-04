@@ -20,7 +20,9 @@ services:
     environment:
       DATABASE_URL: postgres://settleguard:settleguard_dev@postgres:5432/settleguard
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      SETTLEGUARD_AGENT_MODEL: ${SETTLEGUARD_AGENT_MODEL:-claude-sonnet-5}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      SETTLEGUARD_AGENT_PROVIDER: ${SETTLEGUARD_AGENT_PROVIDER:-anthropic}
+      SETTLEGUARD_AGENT_MODEL: ${SETTLEGUARD_AGENT_MODEL:-}
       PORT: 4000
     command: ["sh", "-c", "npm run db:push && npm start"]
     ports:

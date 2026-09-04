@@ -5,7 +5,7 @@ import { registerRunRoutes } from "./routes/runs.js";
 import { registerExceptionRoutes } from "./routes/exceptions.js";
 import { registerReviewCaseRoutes } from "./routes/review-cases.js";
 import { registerAuditRoutes } from "./routes/audit.js";
-import { anthropicCaller } from "../agent/client.js";
+import { configuredModelCaller } from "../agent/client.js";
 import type { ModelCaller } from "../agent/loop.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,7 +30,7 @@ export function buildApp(
 ): FastifyInstance {
   const app = Fastify(options);
   const dependencies: AppDependencies = {
-    modelCaller: dependencyOverrides.modelCaller ?? anthropicCaller,
+    modelCaller: dependencyOverrides.modelCaller ?? configuredModelCaller,
     evidenceOutputDirectory: dependencyOverrides.evidenceOutputDirectory ?? path.resolve(process.cwd(), "artifacts", "investigations"),
     demoDatasetDirectory: dependencyOverrides.demoDatasetDirectory ?? fileURLToPath(new URL("../../../../datasets/demo", import.meta.url)),
   };

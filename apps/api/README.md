@@ -143,9 +143,10 @@ anything less than 100%/100%, so it's CI-friendly too.
 npm run investigate -- <exceptionId>
 ```
 
-Requires `ANTHROPIC_API_KEY` in `.env` — everything else in this repo
-is pure deterministic code with zero AI, but this one command makes a
-real Claude call. Without a key it fails immediately and clearly
+Set `SETTLEGUARD_AGENT_PROVIDER` to `anthropic` or `gemini` and provide the
+matching `ANTHROPIC_API_KEY` or `GEMINI_API_KEY` in `.env`. Everything else in
+this repo is pure deterministic code with zero AI, but this command makes a
+real provider call. Without the selected provider's key it fails immediately and clearly
 rather than hanging on a doomed network request.
 
 To try it against the tiny purpose-built slice dataset (20 payments,
@@ -206,7 +207,7 @@ real exception from every MVP class with the live model:
 npm run agent:regression -- <reconciliationRunId> [outputDirectory]
 ```
 
-The command requires `ANTHROPIC_API_KEY`, writes a separate evidence page
+The command requires the selected provider's API key, writes a separate evidence page
 for each case, prints pass rate/AI-error/unsafe-resolution counts, and
 exits nonzero if any case fails. The six-case set includes an unknown
 adjustment that must remain safely unresolved.

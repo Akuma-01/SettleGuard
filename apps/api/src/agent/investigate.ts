@@ -14,8 +14,9 @@ import { SYSTEM_PROMPT } from "./system-prompt.js";
 import { runAgentLoopWithValidation, type ModelCaller } from "./loop.js";
 import { renderEvidencePage } from "./evidence-html.js";
 import type { InvestigationOutcome } from "./schema.js";
+import { configuredAgentModel } from "./client.js";
 
-export const AGENT_MODEL = process.env.SETTLEGUARD_AGENT_MODEL ?? "claude-sonnet-5";
+export const AGENT_MODEL = configuredAgentModel();
 export const PROMPT_VERSION = "day7-v2";
 export type ResolutionPlanExecutor = (plan: ExecutableActionPlan) => Promise<RerunActionResult>;
 
