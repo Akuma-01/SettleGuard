@@ -1,10 +1,10 @@
 /** Run the live model against one real exception from each MVP class. */
 import "dotenv/config";
 import path from "node:path";
-import { assertAgentProviderConfigured, configuredAgentProvider, configuredModelCaller } from "../agent/client.js";
+import { assertAgentProviderConfigured, configuredAgentModel, configuredAgentProvider, configuredModelCaller } from "../agent/client.js";
 import { runDatabaseAgentRegression } from "../agent/regression-cases.js";
 import { createAgentRegressionReport, writeAgentRegressionReport } from "../agent/regression-report.js";
-import { AGENT_MODEL, PROMPT_VERSION } from "../agent/investigate.js";
+import { PROMPT_VERSION } from "../agent/investigate.js";
 import { pool } from "../db/client.js";
 
 async function main() {
@@ -13,12 +13,13 @@ async function main() {
     throw new Error("Usage: npm run agent:regression -- <reconciliationRunId> [outputDirectory]");
   }
   assertAgentProviderConfigured();
+  const model = configuredAgentModel();
   const outputDirectory = path.resolve(process.argv[3] ?? `agent-regression-run-${runId}`);
-  console.log(`Using ${configuredAgentProvider()} provider with model ${AGENT_MODEL}`);
+  console.log(`Using ${configuredAgentProvider()} provider with model ${model}`);
   const summary = await runDatabaseAgentRegression(runId, configuredModelCaller, outputDirectory);
   const report = createAgentRegressionReport({
     reconciliationRunId: runId,
-    model: AGENT_MODEL,
+    model,
     promptVersion: PROMPT_VERSION,
     summary,
   });

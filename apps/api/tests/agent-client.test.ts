@@ -55,7 +55,11 @@ describe("geminiCaller", () => {
     expect(init.headers["x-goog-api-key"]).toBe("test-key");
     const body = JSON.parse(init.body);
     expect(body.systemInstruction.parts[0].text).toBe("Stay grounded.");
-    expect(body.tools[0].functionDeclarations[0]).toMatchObject({ name: "get_exception", parameters: tools[0]!.input_schema });
+    expect(body.tools[0].functionDeclarations[0]).toMatchObject({
+      name: "get_exception",
+      parameters: { type: "object", properties: tools[0]!.input_schema.properties, required: ["exceptionId"] },
+    });
+    expect(body.tools[0].functionDeclarations[0].parameters).not.toHaveProperty("additionalProperties");
   });
 
   it("maps tool results back to Gemini function responses", async () => {

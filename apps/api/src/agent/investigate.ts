@@ -16,7 +16,6 @@ import { renderEvidencePage } from "./evidence-html.js";
 import type { InvestigationOutcome } from "./schema.js";
 import { configuredAgentModel } from "./client.js";
 
-export const AGENT_MODEL = configuredAgentModel();
 export const PROMPT_VERSION = "day7-v2";
 export type ResolutionPlanExecutor = (plan: ExecutableActionPlan) => Promise<RerunActionResult>;
 
@@ -74,7 +73,7 @@ export async function investigateException(
 
   const [investigationRow] = await db
     .insert(investigations)
-    .values({ exceptionId, status: "in_progress", model: AGENT_MODEL, promptVersion: PROMPT_VERSION, startedAt: new Date() })
+    .values({ exceptionId, status: "in_progress", model: configuredAgentModel(), promptVersion: PROMPT_VERSION, startedAt: new Date() })
     .returning();
   const investigationId = investigationRow!.id;
 

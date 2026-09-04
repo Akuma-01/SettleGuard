@@ -101,7 +101,11 @@ export const geminiCaller: ModelCaller = async ({ system, messages, tools }) => 
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
       contents: geminiContents(messages),
-      tools: [{ functionDeclarations: tools.map((tool) => ({ name: tool.name, description: tool.description, parameters: tool.input_schema })) }],
+      tools: [{ functionDeclarations: tools.map((tool) => {
+        // Gemini's function-schema subset rejects this otherwise useful JSON Schema keyword.
+        const { additionalProperties: _additionalProperties, ...parameters } = tool.input_schema;
+        return { name: tool.name, description: tool.description, parameters };
+      }) }],
       generationConfig: { maxOutputTokens: 2048 },
     }),
   });
