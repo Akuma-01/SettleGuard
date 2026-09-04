@@ -1,6 +1,15 @@
 # Release verification
 
 Verified locally on 4 September 2026 for the Razorpay AI Buildathon submission.
+The same build, test, and browser journey is enforced by the repository's
+`Verify` workflow on every push to `main` and every pull request. It deliberately
+uses no model API key: deterministic behavior and graceful provider fallback must
+remain testable without spending live-model quota. The workflow provisions a
+fresh PostgreSQL service and seeds both integration fixture datasets before the
+test suite, preventing results from depending on a developer's existing database.
+CI uses the checked-in demo ground truth for its fast six-class benchmark; the
+larger 5,000-payment release benchmark remains the separately reported performance
+measurement.
 
 ## Automated checks
 
@@ -52,4 +61,3 @@ See [Benchmark results](BENCHMARK_RESULTS.md) for methodology and caveats.
   production artifacts were tested here.
 - Replace the three placeholder URLs in [Submission](SUBMISSION.md), deploy the
   final revision, and record the demo video.
-

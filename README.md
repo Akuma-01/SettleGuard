@@ -120,6 +120,10 @@ Open `http://localhost:3000`. API health is available at
 
 ## Verification
 
+Every push and pull request runs the API build and test suite, web typecheck and
+production build, and the real Playwright demo journey against PostgreSQL. The
+same checks can be run locally:
+
 ```bash
 cd apps/api
 npm test                 # 43 files, 228 tests
@@ -152,6 +156,7 @@ compose.yaml    PostgreSQL + API + web production-like stack
 - [Buildathon submission package](docs/SUBMISSION.md)
 - [Benchmark results and methodology](docs/BENCHMARK_RESULTS.md)
 - [Three-minute judge demo](docs/DEMO.md)
+- [Release verification evidence](docs/RELEASE_VERIFICATION.md)
 - [Known limitations](docs/KNOWN_LIMITATIONS.md)
 
 SettleGuard preserves uncertainty instead of hiding it: unsupported or
