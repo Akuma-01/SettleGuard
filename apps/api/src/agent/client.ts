@@ -66,6 +66,13 @@ interface GeminiResponse {
   error?: { message?: string };
 }
 
+function retryDelayFromMessage(message: string | undefined): number {
+  const match = message?.match(/retry in ([\d.]+)(ms|s)/i);
+  if (!match) return 0;
+  const value = Number(match[1]);
+  return match[2]!.toLowerCase() === "ms" ? value : value * 1_000;
+}
+
 function parseToolResult(content: string): unknown {
   try { return JSON.parse(content); } catch { return content; }
 }
@@ -112,18 +119,18 @@ export const geminiCaller: ModelCaller = async ({ system, messages, tools }) => 
   };
   let response!: Response;
   let payload!: GeminiResponse;
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 8; attempt++) {
     response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, request);
     payload = await response.json() as GeminiResponse;
     const transientStatus = response.status === 429 || [500, 502, 503, 504].includes(response.status);
-    if (!transientStatus || attempt === 4) break;
+    if (!transientStatus || attempt === 7) break;
     const retryHeaderValue = response.headers.get("retry-after");
     const retryHeader = retryHeaderValue === null ? Number.NaN : Number(retryHeaderValue);
-    const retryMessage = payload.error?.message?.match(/retry in ([\d.]+)s/i)?.[1];
+    const retryMessageMs = retryDelayFromMessage(payload.error?.message);
     const delayMs = Number.isFinite(retryHeader) && retryHeader >= 0
       ? retryHeader * 1_000
-      : Math.max(2_000, Number(retryMessage ?? 0) * 1_000, 2 ** attempt * 2_000);
-    await new Promise((resolve) => setTimeout(resolve, Math.min(delayMs, 30_000)));
+      : Math.max(2_000, retryMessageMs + 250, 2 ** attempt * 2_000);
+    await new Promise((resolve) => setTimeout(resolve, Math.min(delayMs, 60_000)));
   }
   if (!response.ok) throw new Error(`Gemini API request failed (${response.status}): ${payload.error?.message ?? response.statusText}`);
   const parts = payload.candidates?.[0]?.content?.parts ?? [];
