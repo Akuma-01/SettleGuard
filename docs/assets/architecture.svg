@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">SettleGuard architecture</title>
+  <desc id="desc">Financial CSV sources flow through deterministic reconciliation, bounded AI investigation, policy control, human review, and an audit trail.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#789286"/></marker>
+    <style>
+      .bg{fill:#f5f2e9}.card{fill:#fffdf8;stroke:#cfd6cd;stroke-width:2}.core{fill:#0f553f;stroke:#0f553f}.safe{fill:#eff5d7;stroke:#b9c98a;stroke-width:2}.line{stroke:#789286;stroke-width:3;fill:none;marker-end:url(#arrow)}
+      .eyebrow{font:700 13px ui-monospace,monospace;letter-spacing:2px;fill:#64736d}.title{font:700 32px system-ui,sans-serif;fill:#102b23}.label{font:700 18px system-ui,sans-serif;fill:#102b23}.inverse{fill:#fff}.body{font:500 13px system-ui,sans-serif;fill:#65716c}.accent{fill:#baff28}.num{font:700 12px ui-monospace,monospace;fill:#0f553f}
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="680"/>
+  <text class="eyebrow" x="60" y="58">SETTLEGUARD / CONTROLLED AI FINANCE ARCHITECTURE</text>
+  <text class="title" x="60" y="103">Code owns the money. AI investigates. Policy controls action.</text>
+
+  <rect class="card" x="60" y="170" rx="18" width="210" height="150"/>
+  <text class="num" x="82" y="198">01 / INPUT</text><text class="label" x="82" y="233">Financial records</text>
+  <text class="body" x="82" y="262">Payments · refunds</text><text class="body" x="82" y="284">Settlements · bank credits</text><text class="body" x="82" y="306">Adjustments</text>
+
+  <path class="line" d="M270 245 H330"/>
+  <rect class="core" x="330" y="150" rx="18" width="260" height="190"/>
+  <text class="accent num" x="354" y="181">02 / DETERMINISTIC CORE</text><text class="label inverse" x="354" y="219">Reconcile and detect</text>
+  <text class="body inverse" x="354" y="250">Validate + normalize</text><text class="body inverse" x="354" y="274">Match + calculate fees</text><text class="body inverse" x="354" y="298">Emit six exception classes</text><text class="body inverse" x="354" y="322">Measure precision + recall</text>
+
+  <path class="line" d="M590 245 H650"/>
+  <rect class="card" x="650" y="150" rx="18" width="240" height="190"/>
+  <text class="num" x="674" y="181">03 / BOUNDED AGENT</text><text class="label" x="674" y="219">Investigate evidence</text>
+  <text class="body" x="674" y="250">Gemini or Anthropic</text><text class="body" x="674" y="274">14 constrained tools</text><text class="body" x="674" y="298">8-call cap · grounded IDs</text><text class="body" x="674" y="322">Schema-validated output</text>
+
+  <path class="line" d="M890 245 H950"/>
+  <rect class="safe" x="950" y="150" rx="18" width="190" height="190"/>
+  <text class="num" x="974" y="181">04 / POLICY</text><text class="label" x="974" y="219">Control action</text>
+  <text class="body" x="974" y="250">Verify deterministic support</text><text class="body" x="974" y="274">Apply risk thresholds</text><text class="body" x="974" y="298">Require approval</text><text class="body" x="974" y="322">Fail safely</text>
+
+  <path class="line" d="M1045 340 V402"/>
+  <rect class="card" x="850" y="402" rx="18" width="290" height="125"/>
+  <text class="num" x="874" y="431">05 / HUMAN CONTROL</text><text class="label" x="874" y="467">Review · approve · reject</text><text class="body" x="874" y="496">No model can approve its own proposal.</text>
+
+  <path class="line" d="M850 464 H760"/>
+  <rect class="card" x="475" y="402" rx="18" width="285" height="125"/>
+  <text class="num" x="499" y="431">06 / PROVENANCE</text><text class="label" x="499" y="467">Immutable audit trail</text><text class="body" x="499" y="496">Actor · action · evidence · outcome</text>
+
+  <path class="line" d="M475 464 H385"/>
+  <rect class="card" x="60" y="402" rx="18" width="325" height="125"/>
+  <text class="num" x="84" y="431">07 / CONTROL ROOM</text><text class="label" x="84" y="467">Metrics and exception ledger</text><text class="body" x="84" y="496">Next.js UI backed by Fastify + PostgreSQL</text>
+
+  <rect class="safe" x="60" y="574" rx="12" width="1080" height="58"/>
+  <text class="num" x="84" y="598">SAFETY INVARIANT</text><text class="body" x="84" y="619">The agent cannot issue SQL, alter source financial records, move money, or bypass deterministic policy and human approval.</text>
+</svg>

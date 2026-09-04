@@ -13,6 +13,9 @@ test("operator can reconcile demo data and inspect real exception evidence", asy
   await expect(page.getByRole("region", { name: "Demo workflow" })).toContainText("Reconcile");
   await expect(page.getByRole("region", { name: "Demo workflow" })).toContainText("Investigate");
   await expect(page.getByRole("region", { name: "Demo workflow" })).toContainText("Control");
+  if (process.env.CAPTURE_DEMO_ASSETS === "1") {
+    await page.screenshot({ path: "../../docs/assets/control-room-dashboard.png", fullPage: true });
+  }
 
   const runId = new URL(page.url()).searchParams.get("runId");
   expect(runId).toMatch(/^\d+$/);
@@ -24,6 +27,9 @@ test("operator can reconcile demo data and inspect real exception evidence", asy
   await expect(page.getByRole("heading", { name: "Recorded evidence" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Latest investigation" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Audit trail" })).toBeVisible();
+  if (process.env.CAPTURE_DEMO_ASSETS === "1") {
+    await page.screenshot({ path: "../../docs/assets/exception-evidence.png", fullPage: true });
+  }
 
   await page.getByRole("link", { name: /Audit trail/ }).click();
   await expect(page.getByRole("heading", { name: "Control history" })).toBeVisible();

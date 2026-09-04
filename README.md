@@ -16,7 +16,7 @@ Built for the Razorpay AI Buildathon, Track 04 — AI Finance Controller.
 | Match rate | 98.05% |
 | Exception precision | 100.00% (125/125) |
 | Exception recall | 100.00% (125/125) |
-| Reconciliation throughput | 3,521 records/sec |
+| Reconciliation throughput | 3,901 records/sec |
 
 These values were produced by `npm run benchmark` on the checked-in synthetic
 benchmark dataset. They are not UI fixtures. See
@@ -149,6 +149,7 @@ compose.yaml    PostgreSQL + API + web production-like stack
 
 ## Submission notes
 
+- [Buildathon submission package](docs/SUBMISSION.md)
 - [Benchmark results and methodology](docs/BENCHMARK_RESULTS.md)
 - [Three-minute judge demo](docs/DEMO.md)
 - [Known limitations](docs/KNOWN_LIMITATIONS.md)

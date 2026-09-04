@@ -14,8 +14,8 @@ Command: `cd apps/api && npm run benchmark`
 | True positives | 125 |
 | Precision | 100.00% |
 | Recall | 100.00% |
-| Reconciliation duration | 1,663 ms |
-| Throughput | 3,521 records/sec |
+| Reconciliation duration | 1,501 ms |
+| Throughput | 3,901 records/sec |
 
 Exception counts are ground truth / detected / correctly matched:
 
