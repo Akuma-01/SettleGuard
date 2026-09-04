@@ -109,6 +109,13 @@ h1 { margin: 8px 0 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; lette
 .priority-link span, .priority-link small { color: var(--muted); font: 500 8px/1.2 var(--font-mono), monospace; text-transform: uppercase; }
 .priority-link strong { font-size: 11px; text-transform: capitalize; }
 .priority-link small { color: var(--green); }
+.demo-story { display: grid; grid-template-columns: repeat(3, 1fr); margin-bottom: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.demo-story > div { display: flex; align-items: center; gap: 12px; padding: 13px 15px; border-right: 1px solid var(--line); }
+.demo-story > div:last-child { border-right: 0; }
+.demo-story > div > span { color: var(--green); font: 700 9px/1 var(--font-mono), monospace; }
+.demo-story p { display: grid; gap: 3px; margin: 0; }
+.demo-story strong { font-size: 10px; }
+.demo-story small { color: var(--muted); font-size: 8px; line-height: 1.4; }
 .run-status { border-radius: 999px; padding: 8px 11px; background: #e4e2da; font: 500 10px/1 var(--font-mono), monospace; text-transform: uppercase; letter-spacing: .08em; }
 .run-status.completed { color: var(--green); background: #dce9df; }
 .run-status.failed { color: #9a382d; background: #f2ddd8; }
@@ -230,6 +237,9 @@ h1 { margin: 8px 0 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; lette
 .action-panel h3 { margin: 5px 0 3px; font-size: 14px; }
 .action-panel p { margin: 0; color: var(--muted); font-size: 10px; }
 .action-panel button, .review-form button { border: 0; border-radius: 8px; background: var(--green); color: white; padding: 10px 13px; font-size: 10px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.action-panel button:disabled, .demo-button:disabled, .upload-workflow button:disabled { cursor: wait; opacity: .72; }
+.button-spinner { display: inline-block; width: 9px; height: 9px; margin-right: 7px; border: 1.5px solid currentColor; border-right-color: transparent; border-radius: 50%; vertical-align: -1px; animation: button-spin .7s linear infinite; }
+@keyframes button-spin { to { transform: rotate(360deg); } }
 .review-form { display: grid; gap: 9px; padding: 15px 0; border-bottom: 1px solid var(--line); }
 .review-form input, .review-form textarea { width: 100%; border: 1px solid var(--line); border-radius: 7px; background: white; padding: 9px 10px; color: var(--ink); font: 500 10px/1.4 var(--font-sans), sans-serif; }
 .review-form textarea { min-height: 66px; resize: vertical; }
@@ -264,7 +274,9 @@ h1 { margin: 8px 0 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; lette
   .dashboard-actions form:first-child, .demo-button { width: 100%; }
   .upload-workflow form { grid-template-columns: 1fr; }
   .run-selector input { flex: 1; }
-  .metric-grid, .dashboard-lower { grid-template-columns: 1fr; }
+  .metric-grid, .dashboard-lower, .demo-story { grid-template-columns: 1fr; }
+  .demo-story > div { border-right: 0; border-bottom: 1px solid var(--line); }
+  .demo-story > div:last-child { border-bottom: 0; }
   .run-banner, .run-banner-actions { align-items: flex-start; flex-direction: column; }
   .filter-bar { align-items: stretch; flex-direction: column; }
   .filter-bar > a { margin: 6px 0; }

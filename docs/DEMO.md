@@ -1,43 +1,56 @@
-# Five-minute demo flow
+# Three-minute judge demo
 
-## 0:00–0:35 — Problem and safety boundary
+## Before presenting
 
-Explain that settlement records are fragmented and that a generic chatbot must
-not calculate or change money. Show the README architecture: code owns facts and
-arithmetic; the agent investigates; policy controls actions.
+- Start PostgreSQL, the API, and the web app; confirm the header says **Systems operational**.
+- Keep one previously investigated duplicate-refund case available as a backup.
+- Do not spend Gemini quota testing immediately before the presentation.
 
-## 0:35–1:20 — Run real reconciliation
+## 0:00–0:25 — Problem and boundary
 
-Open the control room and select **Run demo**. Point out that the batch is
-ingested and reconciled through the API, then show the measured match rate,
-record count, exceptions, and amount at risk. Do not use a pre-filled screenshot
-as a substitute for this action.
+“Payment, refund, settlement, adjustment, and bank records disagree across
+systems. SettleGuard reconciles the money deterministically, uses AI only to
+gather and explain evidence, and places every action behind policy and human
+approval.”
 
-## 1:20–2:10 — Triage exceptions
+## 0:25–1:00 — Reconcile real records
 
-Open **Exceptions**, filter by run, status, or type, and choose a high-value case.
-Explain the explicit taxonomy and why unresolved cases remain visible.
+Select **Run demo**. While the button shows **Loading demo…**, explain that this
+is real ingestion and reconciliation—not a prepared screenshot. Show the match
+rate, records processed, exceptions detected, and amount at risk. Use the
+Reconcile → Investigate → Control strip to frame the rest of the walkthrough.
 
-## 2:10–3:20 — Explain one investigation
+## 1:00–1:50 — Open the priority case
 
-On exception detail, contrast deterministic evidence with the agent conclusion.
-Walk through confidence, recommendation, approval requirement, ordered tool
-events, and grounded inputs/outputs. If a provider key is configured, run an
-investigation; otherwise use a previously completed local case and say so.
+Select **Inspect evidence** on the priority-case card. Contrast the deterministic
+evidence with the bounded agent conclusion. Show grounded tool events, confidence,
+recommended action, and the mandatory approval state.
 
-## 3:20–4:10 — Human control and audit
+If live Gemini quota is available, select **Investigate exception** and mention
+the eight-tool cap and schema validation. If it is unavailable, show the visible
+**Deterministic fallback active** state and say: “SettleGuard preserves the
+evidence and routes this to a person; it never invents an AI conclusion.”
 
-Show a pending review. Enter reviewer identity and a meaningful note, then
-approve, reject, or mark unresolved. Open **Audit trail** to show the resulting
-actor, action, entity, timestamp, and structured before/after payload.
+## 1:50–2:30 — Demonstrate control
 
-## 4:10–4:45 — Measured evaluation
+Open a pending review case, enter a reviewer ID and meaningful note, then approve,
+reject, or mark unresolved. Point out that recommendations do not execute by
+themselves and that duplicate submissions are disabled while a decision is being
+recorded.
 
-Show `docs/BENCHMARK_RESULTS.md` or run `npm run benchmark`. Emphasize that the
-125 exceptions are compared with generator ground truth, not manually labeled in
-the UI, and that the command fails on a precision/recall regression.
+## 2:30–2:50 — Prove auditability and evaluation
 
-## 4:45–5:00 — Close
+Open **Audit trail** and show the actor, action, entity, timestamp, and structured
+payload. Mention the measured benchmark: 5,855 records, 98.05% match rate, and
+100% precision/recall over 125 injected exceptions.
 
-Summarize: deterministic finance core, bounded evidence-gathering agent,
-policy-controlled resolution, human review, and honest unresolved outcomes.
+## 2:50–3:00 — Close
+
+“SettleGuard combines a deterministic finance core, a grounded investigation
+agent, and policy-controlled human resolution—so automation stays useful without
+becoming financially unsafe.”
+
+## If more time is available
+
+Use the exception ledger filters to show the six-class taxonomy, then compare a
+clear duplicate refund with an ambiguous match that remains under human control.

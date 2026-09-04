@@ -10,6 +10,9 @@ test("operator can reconcile demo data and inspect real exception evidence", asy
   await expect(page.getByText("Match rate", { exact: true })).toBeVisible();
   await expect(page.getByText("Amount at risk", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /Priority case.*Inspect evidence/i })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Demo workflow" })).toContainText("Reconcile");
+  await expect(page.getByRole("region", { name: "Demo workflow" })).toContainText("Investigate");
+  await expect(page.getByRole("region", { name: "Demo workflow" })).toContainText("Control");
 
   const runId = new URL(page.url()).searchParams.get("runId");
   expect(runId).toMatch(/^\d+$/);

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ControlRoomShell } from "@/components/control-room-shell";
+import { PendingButton } from "@/components/pending-button";
 import { getRunDashboard, type DashboardResult } from "@/lib/api";
 import { runDemoAction, uploadDatasetAction } from "./actions";
 
@@ -33,6 +34,12 @@ function Dashboard({ result }: { result: Extract<DashboardResult, { status: "rea
       <section className="run-banner">
         <div><span className="sequence">RUN #{run.id} · BATCH #{run.batchId}</span><h2>{run.batchName}</h2><p>{run.merchantName}</p></div>
         <div className="run-banner-actions"><span className={`run-status ${run.status}`}>{label(run.status)}</span>{context.featuredException && <Link className="priority-link" href={`/exceptions/${context.featuredException.id}`}><span>Priority case</span><strong>{label(context.featuredException.type)}</strong><small>Inspect evidence →</small></Link>}</div>
+      </section>
+
+      <section className="demo-story" aria-label="Demo workflow">
+        <div><span>01</span><p><strong>Reconcile</strong><small>Deterministic matching measures every record.</small></p></div>
+        <div><span>02</span><p><strong>Investigate</strong><small>AI gathers evidence without calculating money.</small></p></div>
+        <div><span>03</span><p><strong>Control</strong><small>Policy gates every resolution and approval.</small></p></div>
       </section>
 
       <section className="metric-grid" aria-label="Reconciliation metrics">
@@ -69,14 +76,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
   const result = parsedRunId ? await getRunDashboard(parsedRunId) : null;
 
   return (
-    <ControlRoomShell active="Overview" eyebrow="SETTLEMENT OPERATIONS / OVERVIEW" title="Reconciliation control room" actions={<div className="dashboard-actions"><form action={runDemoAction}><button className="demo-button" type="submit">Run demo</button></form><form className="run-selector"><label htmlFor="runId">Run ID</label><input id="runId" name="runId" inputMode="numeric" pattern="[1-9][0-9]*" defaultValue={parsedRunId ?? ""} placeholder="e.g. 1" required /><button type="submit">Load run</button></form></div>}>
+    <ControlRoomShell active="Overview" eyebrow="SETTLEMENT OPERATIONS / OVERVIEW" title="Reconciliation control room" actions={<div className="dashboard-actions"><form action={runDemoAction}><PendingButton className="demo-button" pendingLabel="Loading demo…">Run demo</PendingButton></form><form className="run-selector"><label htmlFor="runId">Run ID</label><input id="runId" name="runId" inputMode="numeric" pattern="[1-9][0-9]*" defaultValue={parsedRunId ?? ""} placeholder="e.g. 1" required /><button type="submit">Load run</button></form></div>}>
         {(notice || error) && <div className={error ? "action-feedback error dashboard-feedback" : "action-feedback dashboard-feedback"}>{error ?? notice}</div>}
         <details className="upload-workflow">
           <summary><span><strong>Upload reconciliation dataset</strong><small>Five CSV sources · automatically reconciled</small></span><i>＋</i></summary>
           <form action={uploadDatasetAction}>
             <label>Batch name<input name="batchName" pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,79}" placeholder="september-settlement" required /></label>
             {(["payments.csv", "refunds.csv", "settlements.csv", "bank_transactions.csv", "adjustments.csv"] as const).map((name) => <label className="file-field" key={name}><span>{name}</span><input name="files" type="file" accept=".csv,text/csv" required /></label>)}
-            <button type="submit">Upload and reconcile</button>
+            <PendingButton pendingLabel="Reconciling…">Upload and reconcile</PendingButton>
           </form>
         </details>
         {result?.status === "ready" ? <Dashboard result={result} /> : <EmptyDashboard result={result} />}
