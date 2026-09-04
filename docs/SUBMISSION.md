@@ -87,9 +87,12 @@ Use the [three-minute judge script](DEMO.md). The shortest path is:
 
 ## Submission links
 
-- Repository: **add final repository URL**
-- Hosted application: **add deployment URL**
+- Repository: [github.com/Akuma-01/SettleGuard](https://github.com/Akuma-01/SettleGuard)
 - Demo video: **add video URL**
+
+A hosted deployment is intentionally not part of the submission because the
+buildathon form does not request one. The repository includes Docker Compose and
+verified native production startup instructions for reproducibility.
 
 ## Honest scope
 

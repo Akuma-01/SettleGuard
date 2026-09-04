@@ -3,8 +3,33 @@
 ## Before presenting
 
 - Start PostgreSQL, the API, and the web app; confirm the header says **Systems operational**.
-- Keep one previously investigated duplicate-refund case available as a backup.
+- Prepare one genuine completed Gemini investigation and keep its exception page
+  open in a second tab. A duplicate refund is the clearest judge-facing example.
 - Do not spend Gemini quota testing immediately before the presentation.
+- Close terminals, environment files, bookmarks, notifications, and unrelated
+  tabs before recording. Record at 1080p with browser zoom between 90% and 100%.
+
+## Recording mode
+
+Use a stored, genuinely generated Gemini result for the final recording. This is
+more reliable than waiting for a live provider response on camera and remains an
+honest demonstration: the conclusion, tool trace, evidence, policy decision, and
+timestamps all come from the persisted investigation.
+
+Before recording:
+
+1. Run the demo once and note its run ID.
+2. Complete one Gemini investigation for its priority exception.
+3. Confirm the page shows **Latest completed investigation** and validated agent
+   activity, with `gemini-3.6-flash` visible beside the investigation ID. A later
+   quota failure may appear as a separate warning but will not replace the
+   validated result.
+4. Keep the prepared exception page open in a second tab.
+
+During recording, run a fresh deterministic reconciliation for the first segment,
+then switch to the prepared exception tab for the AI segment. State that it is a
+previously completed Gemini investigation. Do not imply that the call happened
+live if it did not.
 
 ## 0:00–0:25 — Problem and boundary
 
@@ -26,10 +51,10 @@ Select **Inspect evidence** on the priority-case card. Contrast the deterministi
 evidence with the bounded agent conclusion. Show grounded tool events, confidence,
 recommended action, and the mandatory approval state.
 
-If live Gemini quota is available, select **Investigate exception** and mention
-the eight-tool cap and schema validation. If it is unavailable, show the visible
-**Deterministic fallback active** state and say: “SettleGuard preserves the
-evidence and routes this to a person; it never invents an AI conclusion.”
+Switch to the prepared Gemini investigation and mention the eight-tool cap,
+schema validation, and persisted evidence. If showing a newer failed attempt,
+point out that the last validated result remains visible while the provider
+failure is labeled separately; SettleGuard never invents a replacement conclusion.
 
 ## 1:50–2:30 — Demonstrate control
 
@@ -54,3 +79,12 @@ becoming financially unsafe.”
 
 Use the exception ledger filters to show the six-class taxonomy, then compare a
 clear duplicate refund with an ambiguous match that remains under human control.
+
+## Final recording checklist
+
+- Keep the video between two and three minutes.
+- Show the product within the first 20 seconds.
+- Keep API keys and terminal output out of frame.
+- Verify narration is audible and financial amounts are readable.
+- Watch the exported video once before uploading it.
+- Add the final video URL to [Submission](SUBMISSION.md).

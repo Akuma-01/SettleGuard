@@ -34,8 +34,16 @@ export default async function ExceptionDetailPage({ params, searchParams }: { pa
   );
 
   const { exception, run, batch, investigations, reviewCases, auditTrail } = result.data;
-  const latest = investigations[0];
-  const latestFailure = latest?.investigation.status === "failed" ? investigationFailure(latest.investigation.structuredOutputJson) : null;
+  const latestAttempt = investigations[0];
+  const latestCompletedIndex = investigations.findIndex(({ investigation }) => investigation.status === "completed");
+  const latestCompleted = latestCompletedIndex >= 0 ? investigations[latestCompletedIndex] : undefined;
+  const newerFailures = investigations
+    .slice(0, latestCompletedIndex >= 0 ? latestCompletedIndex : investigations.length)
+    .filter(({ investigation }) => investigation.status === "failed");
+  const latestFailure = newerFailures[0];
+  const latestFailureMessage = latestFailure
+    ? investigationFailure(latestFailure.investigation.structuredOutputJson)
+    : null;
   return (
     <ControlRoomShell active="Exceptions" eyebrow={`RUN #${run.id} / EXCEPTION #${exception.id}`} title={label(exception.type)} actions={<Link className="back-link" href={`/exceptions?runId=${run.id}`}>← Exception ledger</Link>}>
       <div className="detail-page">
@@ -49,14 +57,15 @@ export default async function ExceptionDetailPage({ params, searchParams }: { pa
 
         <section className="detail-grid">
           <article className="detail-panel evidence-panel"><div className="panel-heading"><div><span className="sequence">DETERMINISTIC LAYER</span><h3>Recorded evidence</h3></div><span>{exception.primaryRecordType ? `${exception.primaryRecordType} #${exception.primaryRecordId}` : "No primary record"}</span></div><JsonEvidence value={exception.deterministicEvidenceJson} /></article>
-          <article className="detail-panel"><div className="panel-heading"><div><span className="sequence">AGENT CONCLUSION</span><h3>Latest investigation</h3></div><span>{latest ? `#${latest.investigation.id}` : "Not started"}</span></div>
-            {latestFailure ? <div className="agent-degraded"><strong>Deterministic fallback active</strong><p>{latestFailure}</p><small>No AI result was fabricated or auto-applied.</small></div> : latest ? <div className="conclusion"><div><span>Root cause</span><strong>{latest.investigation.rootCause ? label(latest.investigation.rootCause) : "Unresolved"}</strong></div><div><span>Confidence</span><strong>{latest.investigation.confidence == null ? "—" : `${Math.round(latest.investigation.confidence * 100)}%`}</strong></div><div><span>Recommended action</span><strong>{latest.investigation.recommendedAction ? label(latest.investigation.recommendedAction) : "No action"}</strong></div><div><span>Approval</span><strong>{latest.investigation.requiresHumanApproval ? "Human required" : "Policy eligible"}</strong></div></div> : <p className="quiet padded">This exception has not been investigated.</p>}
+          <article className="detail-panel"><div className="panel-heading"><div><span className="sequence">AGENT CONCLUSION</span><h3>Latest completed investigation</h3></div><span>{latestCompleted ? `#${latestCompleted.investigation.id} · ${latestCompleted.investigation.model ?? "model unavailable"}` : "None completed"}</span></div>
+            {latestFailure && <div className="agent-degraded"><strong>Newer attempt #{latestFailure.investigation.id} did not complete</strong><p>{latestFailureMessage ?? "No validated AI conclusion was produced by the newer attempt."}</p><small>The last validated result remains visible below; no failed output was fabricated or auto-applied.</small></div>}
+            {latestCompleted ? <div className="conclusion"><div><span>Root cause</span><strong>{latestCompleted.investigation.rootCause ? label(latestCompleted.investigation.rootCause) : "Unresolved"}</strong></div><div><span>Confidence</span><strong>{latestCompleted.investigation.confidence == null ? "—" : `${Math.round(latestCompleted.investigation.confidence * 100)}%`}</strong></div><div><span>Recommended action</span><strong>{latestCompleted.investigation.recommendedAction ? label(latestCompleted.investigation.recommendedAction) : "No action"}</strong></div><div><span>Approval</span><strong>{latestCompleted.investigation.requiresHumanApproval ? "Human required" : "Policy eligible"}</strong></div></div> : <p className="quiet padded">{latestAttempt ? "No investigation has produced a validated conclusion yet." : "This exception has not been investigated."}</p>}
           </article>
         </section>
 
         <section className="detail-grid timeline-grid">
-          <article className="detail-panel"><div className="panel-heading"><div><span className="sequence">OBSERVABLE REASONING</span><h3>Agent activity</h3></div><span>{latest?.events.length ?? 0} events</span></div>
-            <div className="event-list">{latest?.events.map((event) => <div className="event" key={event.id}><span>{String(event.sequenceNumber).padStart(2, "0")}</span><div><strong>{label(event.eventType)}{event.toolName ? ` · ${label(event.toolName)}` : ""}</strong><small>{date.format(new Date(event.createdAt))}</small>{event.toolInputJson != null && <JsonEvidence value={event.toolInputJson} />}{event.toolOutputJson != null && <JsonEvidence value={event.toolOutputJson} />}</div></div>)}{!latest?.events.length && <p className="quiet padded">No agent events recorded.</p>}</div>
+          <article className="detail-panel"><div className="panel-heading"><div><span className="sequence">OBSERVABLE REASONING</span><h3>Validated agent activity</h3></div><span>{latestCompleted?.events.length ?? 0} events</span></div>
+            <div className="event-list">{latestCompleted?.events.map((event) => <div className="event" key={event.id}><span>{String(event.sequenceNumber).padStart(2, "0")}</span><div><strong>{label(event.eventType)}{event.toolName ? ` · ${label(event.toolName)}` : ""}</strong><small>{date.format(new Date(event.createdAt))}</small>{event.toolInputJson != null && <JsonEvidence value={event.toolInputJson} />}{event.toolOutputJson != null && <JsonEvidence value={event.toolOutputJson} />}</div></div>)}{!latestCompleted?.events.length && <p className="quiet padded">No validated agent events recorded.</p>}</div>
           </article>
           <div className="detail-stack">
             <article className="detail-panel"><div className="panel-heading"><div><span className="sequence">HUMAN CONTROL</span><h3>Review cases</h3></div><span>{reviewCases.length}</span></div><div className="compact-list">{reviewCases.map((review) => review.status === "pending" ? <form className="review-form" action={reviewAction.bind(null, exception.id, review.id)} key={review.id}><strong>#{review.id} · {review.proposedAction ? label(review.proposedAction) : "proposed action"}</strong><input name="reviewerId" placeholder="Reviewer ID" maxLength={200} required /><textarea name="note" placeholder="Decision note" maxLength={2000} required /><div><PendingButton name="decision" value="approve" pendingLabel="Recording…">Approve</PendingButton><PendingButton className="secondary" name="decision" value="reject" pendingLabel="Recording…">Reject</PendingButton><PendingButton className="secondary" name="decision" value="mark_unresolved" pendingLabel="Recording…">Mark unresolved</PendingButton></div></form> : <div key={review.id}><span>#{review.id} · {label(review.status)}</span><strong>{review.reviewerDecision ? label(review.reviewerDecision) : label(review.proposedAction ?? "decided")}</strong>{review.reviewerNote && <small>{review.reviewerNote}</small>}</div>)}{reviewCases.length === 0 && <p className="quiet padded">No review case created.</p>}</div></article>

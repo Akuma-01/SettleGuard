@@ -25,7 +25,7 @@ test("operator can reconcile demo data and inspect real exception evidence", asy
   await expect(firstView).toBeVisible();
   await firstView.click();
   await expect(page.getByRole("heading", { name: "Recorded evidence" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Latest investigation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Latest completed investigation" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Audit trail" })).toBeVisible();
   if (process.env.CAPTURE_DEMO_ASSETS === "1") {
     await page.screenshot({ path: "../../docs/assets/exception-evidence.png", fullPage: true });

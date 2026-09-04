@@ -7,6 +7,7 @@ import { buildApp } from "../src/http/app.js";
 let app: FastifyInstance;
 let exceptionId: number;
 let investigationId: number;
+let failedInvestigationId: number;
 let reviewCaseId: number;
 
 beforeAll(async () => {
@@ -40,6 +41,14 @@ beforeAll(async () => {
     { investigationId, sequenceNumber: 2, eventType: "tool_result", toolName: "get_adjustment", toolOutputJson: { id: 42 } },
     { investigationId, sequenceNumber: 1, eventType: "tool_call", toolName: "get_adjustment", toolInputJson: { adjustmentId: 42 } },
   ]);
+  const [failedInvestigation] = await db.insert(investigations).values({
+    exceptionId,
+    status: "failed",
+    model: "gemini-test",
+    structuredOutputJson: { error: "429 quota exhausted" },
+    completedAt: new Date(),
+  }).returning();
+  failedInvestigationId = failedInvestigation!.id;
   const [review] = await db.insert(reviewCases).values({ exceptionId, status: "pending", proposedAction: "create_review_case" }).returning();
   reviewCaseId = review!.id;
   await db.insert(auditLogs).values([
@@ -63,9 +72,10 @@ describe("GET /api/exceptions/:id", () => {
     expect(body.exception).toMatchObject({ id: exceptionId, type: "UNKNOWN_ADJUSTMENT", amountAtRiskPaise: 2_500 });
     expect(body.run).toMatchObject({ id: expect.any(Number), status: "completed" });
     expect(body.batch).toMatchObject({ id: expect.any(Number), merchantName: expect.any(String) });
-    expect(body.investigations).toHaveLength(1);
-    expect(body.investigations[0].investigation.id).toBe(investigationId);
-    expect(body.investigations[0].events.map((event: any) => event.sequenceNumber)).toEqual([1, 2]);
+    expect(body.investigations).toHaveLength(2);
+    expect(body.investigations.map((entry: any) => entry.investigation.id)).toEqual([failedInvestigationId, investigationId]);
+    expect(body.investigations[0].events).toEqual([]);
+    expect(body.investigations[1].events.map((event: any) => event.sequenceNumber)).toEqual([1, 2]);
     expect(body.reviewCases).toEqual([expect.objectContaining({ id: reviewCaseId, status: "pending" })]);
     expect(body.auditTrail.map((audit: any) => audit.action)).toEqual(expect.arrayContaining([
       "resolution_policy_decision",

@@ -59,5 +59,6 @@ See [Benchmark results](BENCHMARK_RESULTS.md) for methodology and caveats.
 - Build and start the supplied container definitions on a host with Docker. This
   WSL environment does not expose a Docker daemon, so the equivalent native
   production artifacts were tested here.
-- Replace the three placeholder URLs in [Submission](SUBMISSION.md), deploy the
-  final revision, and record the demo video.
+- Record the final demo video and replace its sole remaining placeholder in
+  [Submission](SUBMISSION.md). A hosted URL is not required by the buildathon
+  submission form.
