@@ -183,6 +183,10 @@ h1 { margin: 8px 0 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; lette
 .conclusion div:nth-last-child(-n+2) { border-bottom: 0; }
 .conclusion span { color: var(--muted); font: 500 8px/1 var(--font-mono), monospace; text-transform: uppercase; }
 .conclusion strong { font-size: 12px; text-transform: capitalize; }
+.agent-degraded { margin: 18px 20px; padding: 16px; border: 1px solid #dbc98f; border-radius: 10px; background: #fff8dc; }
+.agent-degraded strong { display: block; color: #735c16; font-size: 12px; }
+.agent-degraded p { margin: 7px 0; color: #5f5434; font-size: 10px; line-height: 1.6; }
+.agent-degraded small { color: var(--muted); font: 500 8px/1.4 var(--font-mono), monospace; text-transform: uppercase; }
 .timeline-grid { align-items: start; }
 .detail-stack { display: grid; gap: 12px; }
 .event-list { padding: 8px 20px 20px; }

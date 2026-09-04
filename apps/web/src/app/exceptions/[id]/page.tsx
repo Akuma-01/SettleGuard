@@ -13,6 +13,14 @@ function JsonEvidence({ value }: { value: unknown }) {
   return <pre className="evidence-json">{JSON.stringify(value, null, 2)}</pre>;
 }
 
+function investigationFailure(value: unknown): string | null {
+  if (!value || typeof value !== "object" || !("error" in value) || typeof value.error !== "string") return null;
+  if (/429|quota|rate limit/i.test(value.error)) return "Provider quota reached. The deterministic evidence remains available and a human review case was created.";
+  if (/500|502|503|504|high demand|unavailable/i.test(value.error)) return "Provider temporarily unavailable. The deterministic evidence remains available and a human review case was created.";
+  if (/timed? out|timeout/i.test(value.error)) return "Provider response timed out. The deterministic evidence remains available and a human review case was created.";
+  return "No validated AI conclusion was produced. The deterministic evidence remains available and a human review case was created.";
+}
+
 export default async function ExceptionDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ notice?: string; error?: string }> }) {
   const [{ id }, feedback] = await Promise.all([params, searchParams]);
   const exceptionId = /^[1-9]\d*$/.test(id) ? Number(id) : null;
@@ -26,6 +34,7 @@ export default async function ExceptionDetailPage({ params, searchParams }: { pa
 
   const { exception, run, batch, investigations, reviewCases, auditTrail } = result.data;
   const latest = investigations[0];
+  const latestFailure = latest?.investigation.status === "failed" ? investigationFailure(latest.investigation.structuredOutputJson) : null;
   return (
     <ControlRoomShell active="Exceptions" eyebrow={`RUN #${run.id} / EXCEPTION #${exception.id}`} title={label(exception.type)} actions={<Link className="back-link" href={`/exceptions?runId=${run.id}`}>← Exception ledger</Link>}>
       <div className="detail-page">
@@ -40,7 +49,7 @@ export default async function ExceptionDetailPage({ params, searchParams }: { pa
         <section className="detail-grid">
           <article className="detail-panel evidence-panel"><div className="panel-heading"><div><span className="sequence">DETERMINISTIC LAYER</span><h3>Recorded evidence</h3></div><span>{exception.primaryRecordType ? `${exception.primaryRecordType} #${exception.primaryRecordId}` : "No primary record"}</span></div><JsonEvidence value={exception.deterministicEvidenceJson} /></article>
           <article className="detail-panel"><div className="panel-heading"><div><span className="sequence">AGENT CONCLUSION</span><h3>Latest investigation</h3></div><span>{latest ? `#${latest.investigation.id}` : "Not started"}</span></div>
-            {latest ? <div className="conclusion"><div><span>Root cause</span><strong>{latest.investigation.rootCause ? label(latest.investigation.rootCause) : "Unresolved"}</strong></div><div><span>Confidence</span><strong>{latest.investigation.confidence == null ? "—" : `${Math.round(latest.investigation.confidence * 100)}%`}</strong></div><div><span>Recommended action</span><strong>{latest.investigation.recommendedAction ? label(latest.investigation.recommendedAction) : "No action"}</strong></div><div><span>Approval</span><strong>{latest.investigation.requiresHumanApproval ? "Human required" : "Policy eligible"}</strong></div></div> : <p className="quiet padded">This exception has not been investigated.</p>}
+            {latestFailure ? <div className="agent-degraded"><strong>Deterministic fallback active</strong><p>{latestFailure}</p><small>No AI result was fabricated or auto-applied.</small></div> : latest ? <div className="conclusion"><div><span>Root cause</span><strong>{latest.investigation.rootCause ? label(latest.investigation.rootCause) : "Unresolved"}</strong></div><div><span>Confidence</span><strong>{latest.investigation.confidence == null ? "—" : `${Math.round(latest.investigation.confidence * 100)}%`}</strong></div><div><span>Recommended action</span><strong>{latest.investigation.recommendedAction ? label(latest.investigation.recommendedAction) : "No action"}</strong></div><div><span>Approval</span><strong>{latest.investigation.requiresHumanApproval ? "Human required" : "Policy eligible"}</strong></div></div> : <p className="quiet padded">This exception has not been investigated.</p>}
           </article>
         </section>
 

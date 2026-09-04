@@ -121,14 +121,14 @@ export async function postApi(path: string, body?: unknown): Promise<{ ok: boole
   }
 }
 
-export async function postApiData<T>(path: string, body?: unknown): Promise<{ data: T | null; message: string }> {
+export async function postApiData<T>(path: string, body?: unknown, options: { timeoutMs?: number } = {}): Promise<{ data: T | null; message: string }> {
   try {
     const response = await fetch(`${apiBaseUrl}${path}`, {
       method: "POST",
       headers: body === undefined ? undefined : { "content-type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
       cache: "no-store",
-      signal: AbortSignal.timeout(60_000),
+      signal: AbortSignal.timeout(options.timeoutMs ?? 60_000),
     });
     const payload = await response.json() as T & { error?: { message?: string } };
     return response.ok
