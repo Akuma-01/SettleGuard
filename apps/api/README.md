@@ -27,7 +27,7 @@ Then:
 cp .env.example .env       # defaults already match Option A/B above
 npm install
 npm run db:push            # creates all 15 tables from src/db/schema.ts
-npm test                   # 219 tests across all backend layers
+npm test                   # 228 tests across all backend layers
 npm run ingest -- ../../datasets/demo demo-001
 npm run reconcile -- 1     # use whatever batch id the ingest above printed
 ```
@@ -245,7 +245,7 @@ src/
 │   ├── regression-cases.ts              six real exception fixtures + live runner
 │   ├── system-prompt.ts           golden rule, structured output requirement
 │   ├── loop.ts                      tool-calling loop + repair-retry (no SDK import — testable without a key)
-│   ├── client.ts                      real Anthropic SDK wrapper (only file that imports it)
+│   ├── client.ts                      Anthropic and Gemini provider adapters
 │   ├── investigate.ts                   orchestrator: load -> agent -> policy -> evidence page
 │   └── evidence-html.ts                   the "plain page" static HTML generator
 ├── policy/                                  deterministic resolution and review gates

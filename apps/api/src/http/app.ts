@@ -5,7 +5,7 @@ import { registerRunRoutes } from "./routes/runs.js";
 import { registerExceptionRoutes } from "./routes/exceptions.js";
 import { registerReviewCaseRoutes } from "./routes/review-cases.js";
 import { registerAuditRoutes } from "./routes/audit.js";
-import { configuredModelCaller } from "../agent/client.js";
+import { configuredAgentStatus, configuredModelCaller } from "../agent/client.js";
 import type { ModelCaller } from "../agent/loop.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -44,11 +44,12 @@ export function buildApp(
   });
 
   app.get("/health", async (_request, reply) => {
+    const agent = configuredAgentStatus();
     try {
       await pool.query("select 1");
-      return { status: "ok", service: "settleguard-api", version: "0.1.0" };
+      return { status: "ok", service: "settleguard-api", version: "0.1.0", agent };
     } catch {
-      return reply.code(503).send({ status: "degraded", service: "settleguard-api", version: "0.1.0" });
+      return reply.code(503).send({ status: "degraded", service: "settleguard-api", version: "0.1.0", agent });
     }
   });
   void app.register(multipart, {

@@ -32,6 +32,19 @@ export function assertAgentProviderConfigured(): void {
   else assertAnthropicConfigured();
 }
 
+export function configuredAgentStatus(): { provider: AgentProvider | "invalid"; model: string | null; configured: boolean } {
+  try {
+    const provider = configuredAgentProvider();
+    return {
+      provider,
+      model: configuredAgentModel(provider),
+      configured: provider === "gemini" ? Boolean(process.env.GEMINI_API_KEY) : Boolean(process.env.ANTHROPIC_API_KEY),
+    };
+  } catch {
+    return { provider: "invalid", model: null, configured: false };
+  }
+}
+
 function getAnthropicClient(): Anthropic {
   assertAnthropicConfigured();
   anthropicClient ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });

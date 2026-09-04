@@ -4,6 +4,7 @@ export interface ApiHealth {
   status: "ok";
   service: string;
   version: string;
+  agent: { provider: "anthropic" | "gemini" | "invalid"; model: string | null; configured: boolean };
 }
 
 export interface RunContext {

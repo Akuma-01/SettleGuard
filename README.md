@@ -122,7 +122,7 @@ Open `http://localhost:3000`. API health is available at
 
 ```bash
 cd apps/api
-npm test                 # 42 files, 219 tests
+npm test                 # 43 files, 228 tests
 npm run benchmark        # fresh ingest → reconcile → ground-truth scoring
 npm audit --omit=dev     # production dependency audit
 
@@ -150,7 +150,7 @@ compose.yaml    PostgreSQL + API + web production-like stack
 ## Submission notes
 
 - [Benchmark results and methodology](docs/BENCHMARK_RESULTS.md)
-- [Five-minute demo flow](docs/DEMO.md)
+- [Three-minute judge demo](docs/DEMO.md)
 - [Known limitations](docs/KNOWN_LIMITATIONS.md)
 
 SettleGuard preserves uncertainty instead of hiding it: unsupported or

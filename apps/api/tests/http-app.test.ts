@@ -22,7 +22,12 @@ describe("HTTP application", () => {
       "x-content-type-options": "nosniff",
       "x-frame-options": "DENY",
     });
-    expect(response.json()).toEqual({ status: "ok", service: "settleguard-api", version: "0.1.0" });
+    expect(response.json()).toEqual({
+      status: "ok",
+      service: "settleguard-api",
+      version: "0.1.0",
+      agent: { provider: expect.stringMatching(/anthropic|gemini/), model: expect.any(String), configured: expect.any(Boolean) },
+    });
   });
 
   it("returns a stable JSON error for unknown routes", async () => {
