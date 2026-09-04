@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ControlRoomShell } from "@/components/control-room-shell";
 import { getRunDashboard, type DashboardResult } from "@/lib/api";
 import { runDemoAction, uploadDatasetAction } from "./actions";
@@ -31,7 +32,7 @@ function Dashboard({ result }: { result: Extract<DashboardResult, { status: "rea
     <div className="dashboard">
       <section className="run-banner">
         <div><span className="sequence">RUN #{run.id} · BATCH #{run.batchId}</span><h2>{run.batchName}</h2><p>{run.merchantName}</p></div>
-        <span className={`run-status ${run.status}`}>{label(run.status)}</span>
+        <div className="run-banner-actions"><span className={`run-status ${run.status}`}>{label(run.status)}</span>{context.featuredException && <Link className="priority-link" href={`/exceptions/${context.featuredException.id}`}><span>Priority case</span><strong>{label(context.featuredException.type)}</strong><small>Inspect evidence →</small></Link>}</div>
       </section>
 
       <section className="metric-grid" aria-label="Reconciliation metrics">

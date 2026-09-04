@@ -23,6 +23,7 @@ export interface RunContext {
   };
   matchCount: number;
   exceptionsByType: Record<string, number>;
+  featuredException: { id: number; type: string; severity: string; amountAtRiskPaise: number } | null;
 }
 
 export interface RunMetrics {

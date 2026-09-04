@@ -9,6 +9,7 @@ test("operator can reconcile demo data and inspect real exception evidence", asy
   await expect(page.getByText("Demo batch loaded and reconciled.")).toBeVisible();
   await expect(page.getByText("Match rate", { exact: true })).toBeVisible();
   await expect(page.getByText("Amount at risk", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Priority case.*Inspect evidence/i })).toBeVisible();
 
   const runId = new URL(page.url()).searchParams.get("runId");
   expect(runId).toMatch(/^\d+$/);

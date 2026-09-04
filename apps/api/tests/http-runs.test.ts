@@ -56,6 +56,7 @@ describe("reconciliation run HTTP resources", () => {
       run: { id: runId, status: "completed", totalRecords: 10, merchantName: expect.any(String) },
       matchCount: 1,
       exceptionsByType: { FEE_MISMATCH: 2 },
+      featuredException: { type: "FEE_MISMATCH", severity: "medium", amountAtRiskPaise: 500 },
     });
   });
 

@@ -5,6 +5,18 @@ import { batches, exceptions, matches, merchants, reconciliationRuns } from "../
 import type { ApiErrorBody } from "../app.js";
 import { parsePositiveId } from "../params.js";
 
+const featuredTypePriority = ["DUPLICATE_REFUND", "BANK_CREDIT_MISMATCH", "FEE_MISMATCH", "UNKNOWN_ADJUSTMENT", "MISSING_SETTLEMENT", "AMBIGUOUS_MATCH"];
+
+function selectFeaturedException(rows: Array<typeof exceptions.$inferSelect>) {
+  return [...rows].sort((left, right) => {
+    const statusDifference = Number(left.status !== "OPEN") - Number(right.status !== "OPEN");
+    if (statusDifference !== 0) return statusDifference;
+    const typeDifference = featuredTypePriority.indexOf(left.type) - featuredTypePriority.indexOf(right.type);
+    if (typeDifference !== 0) return typeDifference;
+    return right.amountAtRiskPaise - left.amountAtRiskPaise;
+  })[0] ?? null;
+}
+
 async function loadRun(runId: number) {
   const [run] = await db.select({
     id: reconciliationRuns.id,
@@ -51,11 +63,18 @@ export async function registerRunRoutes(app: FastifyInstance): Promise<void> {
     ]);
     const exceptionsByType: Record<string, number> = {};
     for (const exception of exceptionRows) exceptionsByType[exception.type] = (exceptionsByType[exception.type] ?? 0) + 1;
+    const featured = selectFeaturedException(exceptionRows);
 
     return {
       run,
       matchCount: matchCountRow[0]!.value,
       exceptionsByType,
+      featuredException: featured ? {
+        id: featured.id,
+        type: featured.type,
+        severity: featured.severity,
+        amountAtRiskPaise: featured.amountAtRiskPaise,
+      } : null,
     };
   });
 
