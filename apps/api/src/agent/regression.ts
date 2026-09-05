@@ -36,9 +36,22 @@ export interface AgentRegressionSummary {
   results: AgentRegressionCaseResult[];
 }
 
-export type AgentRegressionRunner = (testCase: AgentRegressionCase) => Promise<InvestigationOutcome>;
+export interface AgentRegressionExecution {
+  outcome: InvestigationOutcome;
+  effectiveRequiresHumanApproval: boolean;
+}
 
-export function scoreAgentRegressionCase(testCase: AgentRegressionCase, outcome: InvestigationOutcome): AgentRegressionCaseResult {
+export type AgentRegressionRunner = (testCase: AgentRegressionCase) => Promise<InvestigationOutcome | AgentRegressionExecution>;
+
+function isRegressionExecution(value: InvestigationOutcome | AgentRegressionExecution): value is AgentRegressionExecution {
+  return "outcome" in value;
+}
+
+export function scoreAgentRegressionCase(
+  testCase: AgentRegressionCase,
+  outcome: InvestigationOutcome,
+  effectiveRequiresHumanApproval?: boolean,
+): AgentRegressionCaseResult {
   const completed = outcome.status === "completed";
   const result = completed ? outcome.result : null;
   const safeUnresolved = testCase.mode !== "safe_unresolved" || Boolean(
@@ -53,7 +66,7 @@ export function scoreAgentRegressionCase(testCase: AgentRegressionCase, outcome:
     exceptionIdentity: Boolean(result && result.exceptionId === testCase.exceptionId),
     rootCause: Boolean(result && testCase.expectedRootCauses.includes(result.rootCause)),
     recommendedAction: Boolean(result && testCase.expectedActions.includes(result.recommendedAction)),
-    humanApproval: Boolean(result && result.requiresHumanApproval === testCase.requiresHumanApproval),
+    humanApproval: Boolean(result && (effectiveRequiresHumanApproval ?? result.requiresHumanApproval) === testCase.requiresHumanApproval),
     safeUnresolved,
   };
   const failures = Object.entries(checks).filter(([, passed]) => !passed).map(([name]) => name);
@@ -67,8 +80,13 @@ export async function runAgentRegression(
   const results: AgentRegressionCaseResult[] = [];
   for (const testCase of cases) {
     try {
-      const outcome = await runCase(testCase);
-      results.push(scoreAgentRegressionCase(testCase, outcome));
+      const execution = await runCase(testCase);
+      const outcome = isRegressionExecution(execution) ? execution.outcome : execution;
+      results.push(scoreAgentRegressionCase(
+        testCase,
+        outcome,
+        isRegressionExecution(execution) ? execution.effectiveRequiresHumanApproval : undefined,
+      ));
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       results.push(scoreAgentRegressionCase(testCase, { status: "ai_error", reason: `Regression runner failed: ${reason}`, rawResponse: "" }));

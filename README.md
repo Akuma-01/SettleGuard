@@ -126,7 +126,7 @@ same checks can be run locally:
 
 ```bash
 cd apps/api
-npm test                 # 43 files, 228 tests
+npm test                 # 43 files, 232 tests
 npm run benchmark        # fresh ingest → reconcile → ground-truth scoring
 npm audit --omit=dev     # production dependency audit
 

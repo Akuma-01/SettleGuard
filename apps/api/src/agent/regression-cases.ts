@@ -27,7 +27,7 @@ export const REGRESSION_EXPECTATIONS: CaseExpectation[] = [
     type: "FEE_MISMATCH",
     name: "deterministic fee mismatch",
     expectedRootCauses: ["fee_mismatch"],
-    expectedActions: ["reclassify", "rerun_reconciliation", "create_review_case"],
+    expectedActions: ["reclassify", "rerun_reconciliation", "create_review_case", "propose_adjustment"],
   },
   {
     type: "UNKNOWN_ADJUSTMENT",
@@ -89,6 +89,9 @@ export async function runDatabaseAgentRegression(
   return runAgentRegression(cases, async (testCase) => {
     const outputPath = path.join(outputDirectory, `exception-${testCase.exceptionId}.html`);
     const investigation = await investigateException(testCase.exceptionId, callModel, outputPath);
-    return investigation.outcome;
+    return {
+      outcome: investigation.outcome,
+      effectiveRequiresHumanApproval: investigation.policyDecision.includes("Review case"),
+    };
   });
 }

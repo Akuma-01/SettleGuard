@@ -7,5 +7,6 @@ build/
 .env.local
 .DS_Store
 coverage/
+apps/api/investigation-*.html
 datasets/benchmark/*.json
 !datasets/benchmark/.gitkeep

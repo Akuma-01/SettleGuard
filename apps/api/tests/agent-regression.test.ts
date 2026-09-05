@@ -45,6 +45,26 @@ describe("scoreAgentRegressionCase", () => {
     expect(result.failures).toEqual(expect.arrayContaining(["rootCause", "recommendedAction"]));
   });
 
+  it("accepts deterministic policy enforcement when the model omits approval", () => {
+    const result = scoreAgentRegressionCase(
+      classificationCase,
+      completed({ requiresHumanApproval: false }),
+      true,
+    );
+    expect(result.passed).toBe(true);
+    expect(result.checks.humanApproval).toBe(true);
+  });
+
+  it("rejects an unsafe result when neither model nor policy requires approval", () => {
+    const result = scoreAgentRegressionCase(
+      classificationCase,
+      completed({ requiresHumanApproval: false }),
+      false,
+    );
+    expect(result.passed).toBe(false);
+    expect(result.failures).toContain("humanApproval");
+  });
+
   it("counts AI_ERROR as an explicit failed case", () => {
     const result = scoreAgentRegressionCase(classificationCase, { status: "ai_error", reason: "timeout", rawResponse: "" });
     expect(result.passed).toBe(false);
@@ -86,6 +106,14 @@ describe("runAgentRegression", () => {
       ? completed()
       : { status: "ai_error", reason: "provider timeout", rawResponse: "" });
     expect(summary).toMatchObject({ total: 2, passed: 1, failed: 1, passRate: 0.5, aiErrorCount: 1 });
+  });
+
+  it("scores the effective policy disposition returned by a database runner", async () => {
+    const summary = await runAgentRegression([classificationCase], async () => ({
+      outcome: completed({ requiresHumanApproval: false }),
+      effectiveRequiresHumanApproval: true,
+    }));
+    expect(summary).toMatchObject({ passed: 1, failed: 0 });
   });
 
   it("turns a thrown runner failure into a scored AI_ERROR instead of aborting the suite", async () => {

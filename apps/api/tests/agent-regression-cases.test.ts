@@ -39,6 +39,11 @@ describe("buildAgentRegressionCases", () => {
     expect(cases.find((testCase) => testCase.exceptionType === "AMBIGUOUS_MATCH")).toMatchObject({ mode: "safe_unresolved" });
   });
 
+  it("accepts policy-gated adjustment proposals for fee mismatches", () => {
+    expect(REGRESSION_EXPECTATIONS.find((expectation) => expectation.type === "FEE_MISMATCH")?.expectedActions)
+      .toContain("propose_adjustment");
+  });
+
   it("rejects invalid or incomplete reconciliation runs clearly", async () => {
     await expect(buildAgentRegressionCases(0)).rejects.toThrow(/positive integer/);
     await expect(buildAgentRegressionCases(999_999_999)).rejects.toThrow(/missing exception types/);

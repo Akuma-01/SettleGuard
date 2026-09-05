@@ -15,7 +15,7 @@ measurement.
 
 | Area | Verification | Result |
 |---|---|---:|
-| API | Production build and Vitest suite | 43 files, 228 tests passed |
+| API | Production build and Vitest suite | 43 files, 232 tests passed |
 | Web | TypeScript check and production build | Passed |
 | Browser flow | Playwright control-room journey | Passed |
 | Repository | Tracked-file credential scan | No API keys detected |
@@ -52,10 +52,24 @@ A fresh deterministic benchmark processed 5,855 financial records, including
 These figures measure deterministic matching and detection, not model quality.
 See [Benchmark results](BENCHMARK_RESULTS.md) for methodology and caveats.
 
+## Live Gemini verification
+
+The two previously pending exception classes were run individually after the
+free-tier quota reset on 5 September 2026. Both produced stored, schema-validated
+results with `gemini-3.6-flash`:
+
+| Exception | Investigation | Root cause | Recommended action | Effective control |
+|---|---:|---|---|---|
+| `MISSING_SETTLEMENT` | #888 | `missing_settlement` | `rerun_reconciliation` | Human review required by deterministic amount/risk policy |
+| `FEE_MISMATCH` | #889 | `fee_mismatch` | `propose_adjustment` | Human approval required |
+
+Regression scoring evaluates approval at the effective system boundary: a model
+preference cannot fail open when deterministic policy mandates review. Model
+identity, root cause, action classification, and safe-unresolved behavior remain
+independently checked.
+
 ## Remaining external checks
 
-- Run the two remaining live Gemini regression cases after the free-tier quota
-  resets: `MISSING_SETTLEMENT` and `FEE_MISMATCH`.
 - Build and start the supplied container definitions on a host with Docker. This
   WSL environment does not expose a Docker daemon, so the equivalent native
   production artifacts were tested here.
