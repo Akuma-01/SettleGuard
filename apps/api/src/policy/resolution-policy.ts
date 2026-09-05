@@ -1,4 +1,4 @@
-/** Deterministic Phase 5 authorization policy. The model cannot override these gates. */
+/** Deterministic authorization policy. The model cannot override these gates. */
 import type { InvestigationOutcome, InvestigationResult } from "../agent/schema.js";
 
 export const DEFAULT_POLICY_CONFIG = {

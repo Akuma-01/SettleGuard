@@ -11,7 +11,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-// ---------------- Raw data (populated by Day 3's ingestion) ----------------
+// ---------------- Ingested financial data ----------------
 
 export const merchants = pgTable("merchants", {
   id: serial("id").primaryKey(),
@@ -73,7 +73,7 @@ export const settlements = pgTable("settlements", {
   feeAmountPaise: bigint("fee_amount_paise", { mode: "number" }).notNull(),
   taxAmountPaise: bigint("tax_amount_paise", { mode: "number" }).notNull(),
   adjustmentAmountPaise: bigint("adjustment_amount_paise", { mode: "number" }).notNull().default(0),
-  expectedNetPaise: bigint("expected_net_paise", { mode: "number" }), // filled by Phase 2 step 8 (Day 4) — NULL until then
+  expectedNetPaise: bigint("expected_net_paise", { mode: "number" }), // populated during reconciliation; null before then
   reportedNetPaise: bigint("reported_net_paise", { mode: "number" }).notNull(),
   settledAt: timestamp("settled_at", { withTimezone: true }),
   bankReference: text("bank_reference"),
@@ -120,7 +120,7 @@ export const adjustments = pgTable("adjustments", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// ---------------- Reconciliation output (Day 4 onward) ----------------
+// ---------------- Reconciliation output ----------------
 
 export const reconciliationRuns = pgTable("reconciliation_runs", {
   id: serial("id").primaryKey(),

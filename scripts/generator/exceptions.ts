@@ -1,9 +1,9 @@
 /**
- * SettleGuard — Phase 1, Step 2: the exception injector.
+ * SettleGuard deterministic exception injector.
  *
  * Pass 2: takes the correct Pass 1 dataset and deliberately breaks
  * exactly `config.exceptions.*` records per type, recording precisely
- * what was changed in `groundTruth` so Phase 3's benchmark has an
+ * what changed in `groundTruth` so the benchmark has an
  * answer key to score against. Order matters — see generate-dataset.ts
  * for why each step runs when it does.
  */

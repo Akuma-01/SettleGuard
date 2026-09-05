@@ -1,5 +1,5 @@
 /**
- * SettleGuard — Phase 2: reconcile CLI.
+ * SettleGuard reconciliation CLI.
  * Run: npm run reconcile -- <batchId>
  */
 

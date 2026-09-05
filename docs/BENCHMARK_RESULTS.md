@@ -2,7 +2,7 @@
 
 ## Latest measured run
 
-Command: `cd apps/api && npm run benchmark`
+Commands: `npm run generate:benchmark`, then `cd apps/api && npm run benchmark`
 
 | Measure | Result |
 |---|---:|
@@ -38,7 +38,7 @@ precision or recall drops below 100%.
 
 Throughput covers reconciliation only, not CSV ingestion, network transport, or
 AI investigation. Runtime varies by hardware and database state; rerun the
-command when presenting performance from another environment.
+command when reporting performance from another environment.
 
 Resolution quality is evaluated separately by the six-class agent regression
 suite because it measures investigation and policy behavior rather than

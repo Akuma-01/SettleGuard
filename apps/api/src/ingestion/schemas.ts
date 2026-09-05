@@ -1,11 +1,10 @@
 /**
- * SettleGuard — Phase 2, Step 3: CSV row validation.
+ * SettleGuard CSV row validation.
  *
- * One schema per entity, matching the exact column headers Day 2's
+ * One schema per entity, matching the exact column headers the
  * generator writes. Amounts are validated as decimal-rupee STRINGS
  * here (CSV has no native number type) — converting them to integer
- * paise is normalize.ts's job (step 4), deliberately kept separate
- * from validation (step 3) so each step does one thing.
+ * paise is handled separately in normalize.ts.
  */
 
 import { z } from "zod";
@@ -65,7 +64,7 @@ export const settlementRowSchema = z.object({
 });
 export type SettlementRow = z.infer<typeof settlementRowSchema>;
 
-// Deliberately NO settlement_id field — see Day 2's note on
+// Deliberately no settlement_id field; settlement membership is inferred from
 // bank_transactions.csv. This schema validates exactly what a real
 // bank statement line would actually contain.
 export const bankTransactionRowSchema = z.object({

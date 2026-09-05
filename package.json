@@ -11,14 +11,13 @@
   "license": "ISC",
   "description": "SettleGuard — AI finance controller that reconciles payments, refunds, settlements, and bank credits, investigates mismatches with a bounded agent, and reports measured accuracy.",
   "scripts": {
-    "proof": "tsx scripts/phase1-step1-proof.ts",
+    "typecheck": "tsc --noEmit",
     "generate:tiny": "tsx scripts/generate-dataset.ts --preset tiny",
     "generate:demo": "tsx scripts/generate-dataset.ts --preset demo",
     "generate:benchmark": "tsx scripts/generate-dataset.ts --preset benchmark",
     "generate:agent-slice": "tsx scripts/generate-dataset.ts --preset agent-slice"
   },
   "devDependencies": {
-    "@openai/codex": "^0.153.0",
     "@types/node": "^26.2.0",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2"

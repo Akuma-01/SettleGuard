@@ -1,10 +1,10 @@
 /**
- * SettleGuard — Phase 1, Step 2: settlement grouping + bank credits.
+ * SettleGuard settlement grouping and bank-credit generation.
  *
  * Pass 1 only: this produces the CORRECT version of every settlement
  * and bank transaction — internally consistent, zero errors. The
  * exceptions module runs afterward and deliberately breaks specific
- * pieces of this, the same two-pass approach as Day 1's proof script,
+ * pieces of this using a deterministic two-pass approach,
  * just extended to many settlements instead of one.
  *
  * Settlements are grouped by calendar day, not by a fixed record

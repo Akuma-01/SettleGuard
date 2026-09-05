@@ -1,11 +1,4 @@
-/**
- * SettleGuard — Phase 4, Step 1: "some UI (even a plain page) displays
- * the evidence." Literally that — one static HTML file, no framework,
- * no build step, no server (Phase 6 doesn't exist yet). Phase 7 is
- * where the real control-room frontend belongs; this is deliberately
- * not a preview of that, just enough to look at today's result in a
- * browser instead of a terminal.
- */
+/** Render a standalone investigation evidence report. */
 
 import type { AgentStep } from "./loop.js";
 import type { InvestigationOutcome } from "./schema.js";

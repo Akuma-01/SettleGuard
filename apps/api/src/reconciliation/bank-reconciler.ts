@@ -1,6 +1,5 @@
 /**
- * SettleGuard — Phase 2, Steps 5–7, 9–10 (partial): bank transaction
- * matching.
+ * SettleGuard bank-transaction matching.
  *
  * Stage A: exact reference match (bank.reference === settlement's own
  * bankReference) — this is the one link in the whole system with a

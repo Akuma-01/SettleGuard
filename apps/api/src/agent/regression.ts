@@ -1,4 +1,4 @@
-/** Model-agnostic scoring for Day 8's multi-exception agent regression set. */
+/** Model-agnostic scoring for the multi-exception agent regression set. */
 import type { InvestigationOutcome } from "./schema.js";
 
 export interface AgentRegressionCase {

@@ -1,5 +1,5 @@
 /**
- * SettleGuard — Phase 2, Step 4: normalization.
+ * SettleGuard ingestion normalization.
  *
  * Deliberately separate from validation (schemas.ts). Validation asks
  * "is this well-formed input"; normalization asks "what's the

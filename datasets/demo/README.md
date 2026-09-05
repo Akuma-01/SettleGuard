@@ -15,12 +15,12 @@ aside from the `generatedAt` timestamp in `ground_truth.json`).
 `ground_truth.json` is the answer key — it records exactly which
 records were corrupted and how. `payments.csv`, `refunds.csv`,
 `settlements.csv`, `bank_transactions.csv`, and `adjustments.csv` are
-what Phase 2's ingestion actually reads; amounts are decimal rupees
-(not paise) on purpose, since converting that is part of what Phase 2
+what the ingestion pipeline reads; amounts are decimal rupees
+(not paise) because conversion is part of ingestion
 normalizes. `bank_transactions.csv` deliberately has no
 `settlement_id` column — that link has to be earned by matching, not
 read off the file.
 
-This is the dataset the demo/UI (Phase 7) will run against. The much
+This is the dataset used by the demo and UI. The much
 larger `datasets/benchmark/` set (not committed — see `.gitignore`) is
-what Phase 3's benchmark harness scores against.
+what the benchmark harness scores against.

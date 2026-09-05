@@ -1,7 +1,6 @@
 /**
- * SettleGuard — Phase 1, Step 2: shared utilities.
- * Same mulberry32 seeded RNG as Day 1's proof script, extracted so
- * every generator module (and Phase 2+ later) can share one source
+ * Shared deterministic dataset utilities. The seeded mulberry32 RNG lets
+ * every generator module share one source
  * of truth instead of redefining it.
  */
 
@@ -22,7 +21,7 @@ export function mulberry32(seed: number) {
 //   toRupeeString()   plain decimal, for CSV files (1234.56) — CSVs
 //                     simulate a real-world export, so amounts are
 //                     rupee decimals, NOT paise. Normalizing that back
-//                     to integer paise is Phase 2's job, on purpose.
+//                     to integer paise is deliberately handled by ingestion.
 
 export function inr(paise: number): string {
   const rupees = paise / 100;

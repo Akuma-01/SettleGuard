@@ -1,10 +1,9 @@
 /**
- * SettleGuard — Phase 4, Steps 3-4: the tool-calling loop, plus
- * structured-output validation with one repair retry.
+ * SettleGuard tool-calling loop with structured-output validation and one
+ * repair retry.
  *
  * The model caller is an injected function, not a direct Anthropic
- * SDK call — this file never imports the SDK. That's deliberate: it
- * means the entire loop (tool execution, message threading, the
+ * SDK call, so the entire loop (tool execution, message threading, the
  * step cap, the repair-retry-then-AI_ERROR path) is unit-testable
  * with a scripted fake model, with no API key and no network call.
  * The real Anthropic-backed caller lives in client.ts, used only by

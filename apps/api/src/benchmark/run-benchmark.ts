@@ -1,10 +1,7 @@
 /**
- * SettleGuard — Phase 3: the benchmark harness itself.
- * Fresh ingest -> timed reconciliation -> score against ground truth,
- * end to end, no manual batchId-passing between steps. Meant to be
- * run after every later phase, not just once — so every number here
- * is computed fresh from what's actually in the database and the
- * dataset's own ground_truth.json, never hand-typed or cached.
+ * SettleGuard benchmark harness.
+ * Performs fresh ingestion, timed reconciliation, and scoring against the
+ * dataset's ground_truth.json without cached measurements.
  */
 
 import { readFileSync, existsSync } from "node:fs";

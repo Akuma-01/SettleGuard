@@ -1,14 +1,12 @@
 /**
- * SettleGuard — Phase 2, Steps 5, 8, 10 (partial): per-settlement
- * reconciliation.
+ * SettleGuard per-settlement reconciliation.
  *
  * Settlements carry no payment-level breakdown in the raw data — a
  * real settlement report doesn't itemize every payment either, so
  * which payments belong to which settlement has to be DERIVED, not
  * read off a foreign key. This infers it from the settlement's own
  * cycle (settledAt implies which capture day it covers), which is
- * exactly the kind of "Stage B: date window" derivation the
- * architecture doc describes — there's no exact ID to match on here,
+ * a date-window derivation. There is no exact ID to match on here,
  * so there's no Stage A for this particular link.
  *
  * Once payments are confirmed, fee/tax are independently recomputed

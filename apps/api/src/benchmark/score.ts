@@ -1,8 +1,5 @@
 /**
- * SettleGuard — Phase 3: score detected exceptions against ground truth.
- *
- * Replaces the ad-hoc Python cross-checking scripts used to verify
- * Day 4's work by hand. Same idea, done properly: build a canonical
+ * Score detected exceptions against generated ground truth. Build a canonical
  * (type, recordType, internalId) key for every ground-truth entry
  * (resolving its external IDs via IdMaps) and for every detected
  * exception (already internal — type/primaryRecordType/primaryRecordId

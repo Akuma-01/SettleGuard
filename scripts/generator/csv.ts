@@ -1,10 +1,10 @@
 /**
- * SettleGuard — Phase 1, Step 2: CSV export.
+ * SettleGuard CSV export.
  * Datasets are written as CSV, not JSON, because that's the realistic
- * ingestion format Phase 2's "CSV ingestion + Zod validation" step
- * expects — and amounts are written as rupee decimals (see
- * toRupeeString in utils.ts), not paise, so Phase 2's normalization
- * step has real, honest work to do.
+ * ingestion format consumed by the CSV and Zod validation pipeline.
+ * Amounts are written as rupee decimals (see
+ * toRupeeString in utils.ts), not paise, so ingestion normalization
+ * performs the conversion.
  */
 
 import { writeFileSync } from "node:fs";

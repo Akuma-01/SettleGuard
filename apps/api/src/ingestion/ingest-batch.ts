@@ -1,5 +1,5 @@
 /**
- * SettleGuard — Phase 2, Steps 3–4: ingest a full dataset folder.
+ * Ingest and normalize a complete SettleGuard dataset folder.
  *
  * One dataset directory (payments.csv, refunds.csv, settlements.csv,
  * bank_transactions.csv, adjustments.csv) becomes one `batches` row

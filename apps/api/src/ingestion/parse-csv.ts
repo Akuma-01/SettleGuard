@@ -1,5 +1,5 @@
 /**
- * SettleGuard — Phase 2, Step 3: CSV ingestion.
+ * SettleGuard CSV parsing and validation.
  * One bad row shouldn't sink an entire batch — this collects
  * row-level validation errors (with the 1-indexed CSV row number,
  * matching what a person would see if they opened the file) and

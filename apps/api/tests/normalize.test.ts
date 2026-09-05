@@ -12,7 +12,7 @@ describe("rupeeStringToPaise", () => {
     expect(rupeeStringToPaise("0.00")).toBe(0);
   });
   it("converts a large amount without float drift", () => {
-    // 92,988.17 is a real gross amount from the Day 2 tiny run — this
+    // 92,988.17 is a representative generated gross amount; this
     // is exactly the kind of value that silently corrupts under
     // (x * 100) float math (92988.17 * 100 = 9298816.999999998 in
     // IEEE 754). The string-split approach never touches a float.

@@ -1,6 +1,6 @@
 # Release verification
 
-Verified locally on 4 September 2026 for the Razorpay AI Buildathon submission.
+Verification snapshot captured locally on 4 September 2026.
 The same build, test, and browser journey is enforced by the repository's
 `Verify` workflow on every push to `main` and every pull request. It deliberately
 uses no model API key: deterministic behavior and graceful provider fallback must
@@ -54,25 +54,25 @@ See [Benchmark results](BENCHMARK_RESULTS.md) for methodology and caveats.
 
 ## Live Gemini verification
 
-The two previously pending exception classes were run individually after the
-free-tier quota reset on 5 September 2026. Both produced stored, schema-validated
-results with `gemini-3.6-flash`:
+All six deterministic exception classes produced schema-validated results with
+`gemini-3.6-flash` across local live-model runs on 4–5 September 2026.
 
-| Exception | Investigation | Root cause | Recommended action | Effective control |
-|---|---:|---|---|---|
-| `MISSING_SETTLEMENT` | #888 | `missing_settlement` | `rerun_reconciliation` | Human review required by deterministic amount/risk policy |
-| `FEE_MISMATCH` | #889 | `fee_mismatch` | `propose_adjustment` | Human approval required |
+| Exception | Root cause | Recommended action | Confidence | Effective control |
+|---|---|---|---:|---|
+| `UNKNOWN_ADJUSTMENT` | `unknown_adjustment` | `create_review_case` | 95% | Human approval required |
+| `DUPLICATE_REFUND` | `duplicate_refund` | `create_review_case` | 100% | Human approval required |
+| `BANK_CREDIT_MISMATCH` | `bank_credit_mismatch` | `propose_adjustment` | 100% | Human approval required |
+| `AMBIGUOUS_MATCH` | `ambiguous_match` | `create_review_case` | 95% | Human approval required |
+| `MISSING_SETTLEMENT` | `missing_settlement` | `rerun_reconciliation` | 100% | Human review required by deterministic amount/risk policy |
+| `FEE_MISMATCH` | `fee_mismatch` | `propose_adjustment` | 100% | Human approval required |
 
 Regression scoring evaluates approval at the effective system boundary: a model
 preference cannot fail open when deterministic policy mandates review. Model
 identity, root cause, action classification, and safe-unresolved behavior remain
 independently checked.
 
-## Remaining external checks
+## Environment limitation
 
 - Build and start the supplied container definitions on a host with Docker. This
   WSL environment does not expose a Docker daemon, so the equivalent native
   production artifacts were tested here.
-- Record the final demo video and replace its sole remaining placeholder in
-  [Submission](SUBMISSION.md). A hosted URL is not required by the buildathon
-  submission form.

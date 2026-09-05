@@ -1,5 +1,5 @@
 /**
- * SettleGuard — Phase 2: reconciliation orchestrator.
+ * SettleGuard reconciliation orchestrator.
  * Loads everything for a batch once (small enough at these scales to
  * do the matching in memory rather than issuing per-settlement
  * queries), runs settlement + bank matching and every exception
@@ -119,7 +119,7 @@ export async function runReconciliation(batchId: number): Promise<Reconciliation
     }
   }
 
-  // ---- Refund -> payment matches (FK already resolved during Day 3 ingestion) ----
+  // ---- Refund -> payment matches (foreign keys resolved during ingestion) ----
   for (const r of allRefunds) {
     if (r.paymentId === null) continue;
     allMatchRows.push({
@@ -190,7 +190,7 @@ export async function runReconciliation(batchId: number): Promise<Reconciliation
   // Match rate: matchable records minus every record flagged by any
   // exception, keyed by (type, id) so the same record isn't double
   // counted across two different exceptions on it — same approach as
-  // Day 1's proof script.
+  // Preserve deterministic ordering for reproducible reconciliation.
   const totalRecords = allPayments.length + allRefunds.length + allSettlements.length + allBankTxns.length + allAdjustments.length;
   const flagged = new Set<string>();
   for (const e of allExceptionRows) flagged.add(`${e.primaryRecordType}:${e.primaryRecordId}`);

@@ -1,6 +1,6 @@
 # @settleguard/api
 
-SettleGuard's backend through Phase 6: ingestion, deterministic reconciliation,
+SettleGuard's backend provides ingestion, deterministic reconciliation,
 benchmarking, bounded AI investigation, policy-controlled resolution, human
 review, audit history, and the HTTP API.
 
@@ -32,7 +32,7 @@ npm run ingest -- ../../datasets/demo demo-001
 npm run reconcile -- 1     # use whatever batch id the ingest above printed
 ```
 
-## HTTP API (Phase 6 complete)
+## HTTP API
 
 Start the service after setup:
 
@@ -129,15 +129,14 @@ npm run benchmark -- --dataset demo  # quicker sanity check, 500 payments
 Match rate: 98.05%
 Precision:  100.00%  (125/125 flagged exceptions were real)
 Recall:     100.00%  (125/125 injected exceptions were caught)
-Throughput: 3521 records/sec (reconciliation only, 1663ms for 5855 records)
+Throughput: 3901 records/sec (reconciliation only, 1501ms for 5855 records)
 ```
 
-Run this after every later phase (the agent, the policy engine, the
-API layer) — it's the fastest way to confirm new work hasn't quietly
-regressed the deterministic core underneath it. Exits non-zero on
+Run this after changes to the agent, policy engine, or API layer to confirm the
+deterministic core has not regressed. It exits non-zero on
 anything less than 100%/100%, so it's CI-friendly too.
 
-## The agent (Phase 4 complete)
+## The agent
 
 ```bash
 npm run investigate -- <exceptionId>
@@ -171,7 +170,7 @@ Zod-validated structured JSON (`exceptionId`, `rootCause`, `confidence`, `eviden
 invalid response gets one repair retry, then an honest `AI_ERROR`
 rather than a fabricated result. The policy layer opens a review case when
 approval is required; low-risk, strongly supported actions
-may be auto-resolved through deterministic Phase 5 gates.
+may be auto-resolved through deterministic policy gates.
 
 The loop caps actual tool executions at eight, including parallel tool
 requests. Oversized batches are not partially executed; malformed calls,
@@ -185,7 +184,7 @@ Two controlled workflow actions (`create_review_case` and
 `propose_adjustment`) live in a separate catalog. They require trusted
 authorization supplied outside model input, are idempotent on retry,
 and create audit records. They are not exposed to the normal agent loop.
-Linking, reclassification, and resolution pass through Phase 5 policy gates.
+Linking, reclassification, and resolution pass through deterministic policy gates.
 No action moves money or mutates source financial records.
 
 Everything except the live model call is tested without needing an
@@ -217,7 +216,7 @@ adjustment that must remain safely unresolved.
 ```text
 src/
 ├── db/
-│   ├── schema.ts       all 15 tables from architecture doc §1.6
+│   ├── schema.ts       financial, reconciliation, agent, and audit tables
 │   └── client.ts         drizzle + pg connection
 ├── ingestion/
 │   ├── schemas.ts          Zod validation, one schema per CSV
@@ -252,7 +251,7 @@ src/
 ├── http/
 │   ├── app.ts                                 Fastify composition and error handling
 │   ├── server.ts                                service entry point
-│   └── routes/                                   Phase 6 REST surface
+│   └── routes/                                   REST resources
 └── cli/
     ├── ingest.ts        npm run ingest -- <dir> [batch-name]
     ├── reconcile.ts       npm run reconcile -- <batchId>
@@ -263,5 +262,5 @@ src/
 
 `agent/` remains bounded by design: model-facing tools read and analyze;
 workflow writes require out-of-band authorization, and financial source
-records are never directly mutable by the model. Background workers remain
-optional Phase 8 work if synchronous demo performance proves insufficient.
+records are never directly mutable by the model. Background workers are a future
+option if synchronous workload performance proves insufficient.

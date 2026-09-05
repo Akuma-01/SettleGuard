@@ -18,7 +18,7 @@
 - Database setup currently uses Drizzle schema push rather than a reviewed,
   versioned production migration chain.
 - The control room has no live job progress, notification system, or historical
-  trend charts. These are intentionally outside the P0 buildathon workflow.
+  trend charts. These are outside the current MVP workflow.
 - Container definitions are provided, but this WSL environment did not have
   Docker available for an actual image build; native production builds and
   compiled standalone startup were verified instead. The exact checks are in

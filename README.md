@@ -7,6 +7,18 @@ the exceptions that need judgment.
 
 Built for the Razorpay AI Buildathon, Track 04 — AI Finance Controller.
 
+![SettleGuard reconciliation control room](docs/assets/control-room-dashboard.png)
+
+## Try it
+
+1. Select **Run demo** to ingest and reconcile the bundled CSV records.
+2. Inspect the priority exception and its deterministic evidence.
+3. Review the bounded Gemini investigation and cited agent activity.
+4. Apply a human decision and verify the immutable audit trail.
+
+Docker Compose and the local instructions below provide reproducible evaluation
+paths.
+
 ## Measured result
 
 | Benchmark | Result |
@@ -18,7 +30,7 @@ Built for the Razorpay AI Buildathon, Track 04 — AI Finance Controller.
 | Exception recall | 100.00% (125/125) |
 | Reconciliation throughput | 3,901 records/sec |
 
-These values were produced by `npm run benchmark` on the checked-in synthetic
+These values were produced by `npm run benchmark` on the deterministic synthetic
 benchmark dataset. They are not UI fixtures. See
 [benchmark methodology](docs/BENCHMARK_RESULTS.md) for the full breakdown.
 
@@ -38,6 +50,8 @@ SettleGuard separates those responsibilities:
 - every controlled action produces an audit entry.
 
 ## Architecture
+
+![SettleGuard controlled architecture](docs/assets/architecture.svg)
 
 ```mermaid
 flowchart LR
@@ -66,6 +80,22 @@ repair attempt, grounded evidence IDs, and explicit `AI_ERROR` or insufficient-
 evidence outcomes. It cannot issue SQL, modify monetary source records, approve
 its own high-risk proposal, or bypass policy thresholds.
 
+## Why the AI boundary matters
+
+- AI never owns authoritative monetary arithmetic or writes source records.
+- Every cited record ID must come from trusted context or constrained tool output.
+- Deterministic policy—not the model—decides whether an action can execute.
+- Financial adjustments and high-risk cases remain behind human approval.
+- Provider quota, timeout, and validation failures preserve evidence instead of
+  producing a fabricated conclusion.
+- A later provider failure cannot hide the newest validated investigation.
+
+All six deterministic exception classes have completed, stored
+`gemini-3.6-flash` investigations: missing settlement, fee mismatch, unknown
+adjustment, duplicate refund, bank-credit mismatch, and ambiguous match. See
+[release verification](docs/RELEASE_VERIFICATION.md#live-gemini-verification)
+for the classifications, confidence, and effective controls.
+
 ## Control room
 
 The Next.js UI provides:
@@ -77,6 +107,16 @@ The Next.js UI provides:
 - deterministic evidence, agent trace, conclusion, and confidence detail;
 - controlled investigate, approve, reject, and mark-unresolved actions;
 - filtered, immutable audit history.
+
+![SettleGuard deterministic exception evidence](docs/assets/exception-evidence.png)
+
+## Technology
+
+- TypeScript, Node.js, Fastify, PostgreSQL, and Drizzle ORM
+- Next.js and React control room
+- Gemini 3.6 Flash and Anthropic provider adapters
+- Zod validation, Vitest integration tests, and Playwright browser E2E
+- Docker Compose production-like deployment definitions
 
 ## Quick demo with containers
 
@@ -125,6 +165,9 @@ production build, and the real Playwright demo journey against PostgreSQL. The
 same checks can be run locally:
 
 ```bash
+# From the repository root; creates the ignored ground-truth answer key
+npm run generate:benchmark
+
 cd apps/api
 npm test                 # 43 files, 232 tests
 npm run benchmark        # fresh ingest → reconcile → ground-truth scoring
@@ -151,11 +194,9 @@ docs/           benchmark evidence, demo script, and known limitations
 compose.yaml    PostgreSQL + API + web production-like stack
 ```
 
-## Submission notes
+## Evaluation evidence
 
-- [Buildathon submission package](docs/SUBMISSION.md)
 - [Benchmark results and methodology](docs/BENCHMARK_RESULTS.md)
-- [Three-minute judge demo](docs/DEMO.md)
 - [Release verification evidence](docs/RELEASE_VERIFICATION.md)
 - [Known limitations](docs/KNOWN_LIMITATIONS.md)
 

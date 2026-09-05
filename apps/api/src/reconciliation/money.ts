@@ -1,8 +1,6 @@
 /**
- * SettleGuard — Phase 2: money + date helpers for the reconciliation
- * engine. Same fee/tax policy as Day 2's generator, kept as a small
- * independent copy rather than a cross-package import — see Day 3's
- * note on why apps/api doesn't share code with scripts/ yet.
+ * Money and date helpers for reconciliation. The fee/tax policy mirrors the
+ * generator but remains local to the API package.
  */
 
 const FEE_PERCENT = 0.02;

@@ -1,5 +1,5 @@
 /**
- * SettleGuard — Phase 2: ingest CLI.
+ * SettleGuard ingestion CLI.
  * Run: npm run ingest -- ../../datasets/demo demo-001
  */
 

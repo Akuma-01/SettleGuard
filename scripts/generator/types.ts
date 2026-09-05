@@ -1,8 +1,6 @@
 /**
- * SettleGuard — Phase 1, Step 2: shared types for the real generator.
- * Extends Day 1's domain model to support many settlements and a
- * configurable exception injector, and adds the config / ground-truth
- * shapes the generator reads and writes.
+ * Shared configuration, record, and ground-truth types for the SettleGuard
+ * dataset generator.
  */
 
 export type PaymentStatus = "captured" | "failed" | "pending";

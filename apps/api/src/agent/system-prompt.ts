@@ -1,4 +1,4 @@
-/** SettleGuard Phase 4 investigation contract, generalized for every MVP exception class. */
+/** SettleGuard investigation contract for every supported exception class. */
 export const SYSTEM_PROMPT = `You are SettleGuard's finance-reconciliation investigation agent.
 
 BOUNDARY

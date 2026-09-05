@@ -1,8 +1,6 @@
 /**
- * SettleGuard — Phase 2, Step 10 (partial): duplicate refund
- * detection. Independent of settlement matching — same grouping
- * approach as Day 1's proof script and Day 2's generator, just
- * running against real ingested data instead of an in-memory array.
+ * Duplicate-refund detection over ingested records, independent of settlement
+ * matching.
  */
 
 import type { RefundRecord } from "../db/schema.js";

@@ -1,11 +1,10 @@
 /**
- * SettleGuard — Phase 3: external -> internal ID resolution.
+ * External-to-internal benchmark ID resolution.
  *
  * ground_truth.json speaks in external IDs ("PAY_10034", "SET_20260301")
- * since that's what Day 2's generator wrote to the CSVs. Detected
- * exceptions speak in internal DB ids, since that's what Day 3's
- * ingestion assigned. Scoring one against the other requires a bridge
- * — this is that bridge, built once per batch from a handful of
+ * because the generator writes them to the CSVs. Detected exceptions
+ * use internal database IDs assigned during ingestion. This bridge is built once
+ * per batch from a handful of
  * cheap queries rather than re-resolved per ground-truth entry.
  */
 

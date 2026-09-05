@@ -1,5 +1,5 @@
 /**
- * SettleGuard — Phase 4: investigate CLI.
+ * SettleGuard investigation CLI.
  * Run: npm run investigate -- <exceptionId>
  */
 

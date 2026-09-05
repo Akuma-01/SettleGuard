@@ -1,5 +1,5 @@
 /**
- * SettleGuard — Phase 1, Step 2: the real synthetic data generator.
+ * SettleGuard deterministic synthetic data generator.
  *
  * Run:
  *   npx tsx scripts/generate-dataset.ts --preset tiny
@@ -53,18 +53,16 @@ const PRESETS: Record<string, DatasetConfig> = {
     refundRate: 0.12,
     daySpan: 120,
     baseDate: "2026-03-01",
-    // Exact distribution from the architecture doc's own sample config.
+    // Fixed distribution for the performance benchmark.
     exceptions: { missingSettlement: 20, duplicateRefund: 20, feeMismatch: 25, bankAmountMismatch: 25, unknownAdjustment: 20, ambiguousReference: 15 },
     outDir: "datasets/benchmark",
   },
   "agent-slice": {
-    // Phase 4, Step 1's own spec: "one small dataset (20 payments / 3
-    // refunds / 1 settlement / 1 bank credit / 1 unknown adjustment)".
+    // Small focused dataset: 20 payments, 3 refunds, 1 settlement,
+    // 1 bank credit, and 1 unknown adjustment.
     // daySpan: 1 forces every payment into a single day-bucket, so
     // exactly one settlement (and one derived bank credit) comes out
-    // regardless of scale — deliberately the smallest, most legible
-    // case to wire the agent loop against end to end, not a
-    // realistic-volume dataset.
+    // regardless of scale. This keeps agent-loop evaluation legible.
     name: "agent-slice",
     seed: 11,
     paymentCount: 20,
@@ -165,7 +163,7 @@ function writeDataset(ds: GeneratedDataset): void {
 
   // Deliberately NO settlement_id column here. A real bank statement line
   // doesn't arrive pre-linked to your internal settlement ID — that link
-  // is exactly what Phase 2's matcher has to earn. It's kept in
+  // is exactly what the matcher has to earn. It is kept in
   // ground_truth.json (below) as the answer key, not leaked into the
   // "real-world" file.
   writeCsv(

@@ -1,7 +1,7 @@
 /**
- * SettleGuard — Phase 1, Step 2: payments + refunds.
+ * SettleGuard payment and refund generation.
  * Refund generator supports partial / full / none per payment, as
- * the build sequence doc specifies.
+ * the dataset configuration specifies.
  */
 
 import type { DatasetConfig, Payment, PaymentMethod, Refund } from "./types.js";
@@ -10,7 +10,7 @@ import { addDays, atTime, dayBucket } from "./utils.js";
 const METHODS: PaymentMethod[] = ["card", "upi", "netbanking", "wallet"];
 
 function randomAmountPaise(rand: () => number): number {
-  // Between ₹150.00 and ₹9,500.00 — same range as Day 1's proof script.
+  // Between ₹150.00 and ₹9,500.00.
   return Math.floor(rand() * (950000 - 15000) + 15000);
 }
 

@@ -1,5 +1,5 @@
 /**
- * SettleGuard — Phase 4, Step 4: structured output + validation.
+ * SettleGuard structured investigation output and validation.
  *
  * Every investigation ends with exactly this shape, Zod-validated —
  * never a fabricated result. If the model's final response isn't

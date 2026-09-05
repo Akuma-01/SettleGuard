@@ -1,5 +1,5 @@
 /**
- * SettleGuard — Phase 3: benchmark CLI.
+ * SettleGuard benchmark CLI.
  * Run: npm run benchmark              (defaults to the benchmark dataset)
  *      npm run benchmark -- --dataset demo
  */

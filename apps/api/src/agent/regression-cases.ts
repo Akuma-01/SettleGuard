@@ -1,4 +1,4 @@
-/** Real-database case selection and execution for the Day 8 regression set. */
+/** Real-database case selection and execution for the agent regression set. */
 import { eq } from "drizzle-orm";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
